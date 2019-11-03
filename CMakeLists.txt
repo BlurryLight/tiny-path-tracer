@@ -5,4 +5,4 @@ project(Path_tracer LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(Path_tracer main.cpp vec3.h)
+add_executable(Path_tracer main.cpp vec3.h ray.h ray.cc hitable.h sphere.h hitableList.h camera.h)
