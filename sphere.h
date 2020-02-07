@@ -6,13 +6,15 @@
 class sphere : public hitable {
 public:
   sphere() {}
-  sphere(vec3 center, float radius) : center_(center), radius_(radius) {}
+  sphere(vec3 center, float radius, material *m)
+      : center_(center), radius_(radius), mat_ptr_(m) {}
 
   virtual bool hit(const ray &r, float t_min, float t_max,
                    hit_record &rec) const override;
 
   vec3 center_;
   float radius_;
+  material *mat_ptr_;
 };
 
 bool sphere::hit(const ray &r, float t_min, float t_max,
@@ -30,6 +32,7 @@ bool sphere::hit(const ray &r, float t_min, float t_max,
       rec.t = temp;
       rec.point = r.point_at_parameter(temp);
       rec.normal = (rec.point - center_) / radius_;
+      rec.mat_ptr = mat_ptr_;
       return true;
     }
     temp = (-b + sqrt(b * b - 4 * a * c)) / (2 * a);
@@ -37,6 +40,7 @@ bool sphere::hit(const ray &r, float t_min, float t_max,
       rec.t = temp;
       rec.point = r.point_at_parameter(temp);
       rec.normal = (rec.point - center_) / radius_;
+      rec.mat_ptr = mat_ptr_;
       return true;
     }
   }
