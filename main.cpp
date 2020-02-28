@@ -66,27 +66,18 @@ hitable *random_scene() {
 int main(int argc, char **argv) {
   std::string filename{"img.ppm"};
   std::ofstream ofs(filename, std::ios::out);
-  int nx = 800;
-  int ny = 400;
+  int nx = 400;
+  int ny = 200;
   int ns = 100; // anti-alisaing sample
   ofs << "P3\n" << nx << " " << ny << "\n255\n";
-  hitable *list[5];
-  list[0] =
-      new sphere(vec3(0, 0, -1), 0.5, new lambertian(vec3(0.1, 0.2, 0.5)));
-  list[1] =
-      new sphere(vec3(0, -100.5, -1), 100, new lambertian(vec3(0.8, 0.8, 0.0)));
-  list[2] =
-      new sphere(vec3(1, 0, -1), 0.5, new metal(vec3(0.8, 0.6, 0.2), 0.0));
-  list[3] = new sphere(vec3(-1, 0, -1), 0.5, new dielectric(1.5));
-  list[4] = new sphere(vec3(-1, 0, -1), -0.45, new dielectric(1.5));
 
-  hitable *world = new hitable_list(list, 5);
-  vec3 lookfrom = vec3(3, 3, 2);
+  hitable *world = random_scene();
+  vec3 lookfrom = vec3(9, 2, 3);
   vec3 lookat = vec3(0, 0, -1);
   float dist_to_focus = (lookfrom - lookat).length();
-  float aperture = 2.0;
-  camera cam(lookfrom, lookat, vec3(0, 1, 0), 20.0, float(nx) / (float)ny,
-             aperture, dist_to_focus);
+  float aperture = 0.1;
+  camera_with_blur cam(lookfrom, lookat, vec3(0, 1, 0), 90.0,
+                       float(nx) / (float)ny, aperture, dist_to_focus);
   for (int j = ny - 1; j >= 0; j--) {
     for (int i = 0; i < nx; i++) {
       vec3 col = vec3(0.0, 0.0, 0.0);
@@ -102,7 +93,7 @@ int main(int argc, char **argv) {
       int red = int(255.99f * col.r());
       int green = int(255.99f * col.g());
       int blue = int(255.99f * col.b());
-      ofs << red << ' ' << green << ' ' << blue << ' ' << '\n';
+      { ofs << red << ' ' << green << ' ' << blue << ' ' << '\n'; }
     }
   }
   return 0;
