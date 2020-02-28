@@ -2,11 +2,10 @@
 #define HITABLE_H
 
 #include "ray.h"
-
 inline vec3 random_in_unit_sphere() {
   vec3 p;
   do {
-    p = 2.0 * vec3(drand48(), drand48(), drand48()) - vec3(1.0, 1.0, 1.0);
+    p = 2.0 * vec3(drand_r(), drand_r(), drand_r()) - vec3(1.0, 1.0, 1.0);
   } while (p.squared_length() >= 1.0);
   return p;
 }
@@ -132,7 +131,7 @@ public:
     }
     //反射概率
     //因为我们要采样多次，所以这里可以用随机数来模拟概率(蒙特卡罗)
-    if (drand48() < reflect_prob) {
+    if (drand_r() < reflect_prob) {
       scattered = ray(rec.point, reflected);
     } else {
       scattered = ray(rec.point, refracted);

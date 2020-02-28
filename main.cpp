@@ -3,9 +3,15 @@
 #include "ray.h"
 #include "sphere.h"
 #include "vec3.h"
+#include <algorithm>
+#include <condition_variable>
+#include <deque>
 #include <fstream>
+#include <future>
 #include <iostream>
-#include <random>
+#include <map>
+#include <mutex>
+#include <thread>
 
 vec3 color(const ray &r, hitable *world, int depth) {
   hit_record rec;
@@ -34,20 +40,20 @@ hitable *random_scene() {
   int i = 1;
   for (int a = -11; a < 11; a++) {
     for (int b = -11; b < 11; b++) {
-      float choose_mat = drand48();
-      vec3 center(a + 0.9 * drand48(), 0.2, b + 0.9 * drand48());
+      float choose_mat = drand_r();
+      vec3 center(a + 0.9 * drand_r(), 0.2, b + 0.9 * drand_r());
       if ((center - vec3(4, 0.2, 0)).length() > 0.9) {
         if (choose_mat < 0.8) { // diffuse
           list[i++] = new sphere(
               center, 0.2,
-              new lambertian(vec3(drand48() * drand48(), drand48() * drand48(),
-                                  drand48() * drand48())));
+              new lambertian(vec3(drand_r() * drand_r(), drand_r() * drand_r(),
+                                  drand_r() * drand_r())));
         } else if (choose_mat < 0.95) { // metal
           list[i++] = new sphere(
               center, 0.2,
-              new metal(vec3(0.5 * (1 + drand48()), 0.5 * (1 + drand48()),
-                             0.5 * (1 + drand48())),
-                        0.5 * drand48()));
+              new metal(vec3(0.5 * (1 + drand_r()), 0.5 * (1 + drand_r()),
+                             0.5 * (1 + drand_r())),
+                        0.5 * drand_r()));
         } else { // glass
           list[i++] = new sphere(center, 0.2, new dielectric(1.5));
         }
@@ -78,23 +84,60 @@ int main(int argc, char **argv) {
   float aperture = 0.1;
   camera_with_blur cam(lookfrom, lookat, vec3(0, 1, 0), 90.0,
                        float(nx) / (float)ny, aperture, dist_to_focus);
-  for (int j = ny - 1; j >= 0; j--) {
-    for (int i = 0; i < nx; i++) {
-      vec3 col = vec3(0.0, 0.0, 0.0);
-      for (int k = 0; k < ns; k++) {
-        float u = ((float)i + drand48()) / (float)nx;
-        float v = ((float)j + drand48()) / (float)ny;
 
-        ray r = cam.get_ray(u, v);
-        col += color(r, world, 0);
-      }
-      col /= float(ns);
-      col = vec3(sqrt(col.r()), sqrt(col.g()), sqrt(col.b()));
-      int red = int(255.99f * col.r());
-      int green = int(255.99f * col.g());
-      int blue = int(255.99f * col.b());
-      { ofs << red << ' ' << green << ' ' << blue << ' ' << '\n'; }
+  std::mutex mutex_;
+  std::map<int, std::vector<int>> result;
+  std::deque<std::thread> thread_vec;
+  auto start = std::chrono::high_resolution_clock::now();
+  for (int j = ny - 1; j >= 0; j--) {
+    // naive thread pool
+    //        if (thread_vec.size() >= 8) {
+    //          std::for_each(thread_vec.begin(), thread_vec.end(),
+    //                        [](std::thread &t) { t.join(); });
+    //          thread_vec.clear();
+    //        }
+    thread_vec.emplace_back(
+        [&](int index) {
+          thread_local std::vector<int> row_colors;
+          for (int i = 0; i < nx; i++) {
+            vec3 col = vec3(0.0, 0.0, 0.0);
+            for (int k = 0; k < ns; k++) {
+              float u = ((float)i + drand_r()) / (float)nx;
+              float v = ((float)index + drand_r()) / (float)ny;
+
+              ray r = cam.get_ray(u, v);
+              col += color(r, world, 0);
+            }
+            col /= float(ns);
+            col = vec3(sqrt(col.r()), sqrt(col.g()), sqrt(col.b()));
+            int red = int(255.99f * col.r());
+            int green = int(255.99f * col.g());
+            int blue = int(255.99f * col.b());
+            row_colors.push_back(red);
+            row_colors.push_back(green);
+            row_colors.push_back(blue);
+          }
+          {
+            std::lock_guard<std::mutex> lock(mutex_);
+            result.insert({index, row_colors});
+          }
+        },
+        j);
+  }
+  for (auto &i : thread_vec) {
+    i.join();
+  }
+  for (int i = ny - 1; i >= 0; i--) {
+    auto j = result.at(i);
+    for (int k = 0; k < j.size(); k += 3) {
+      ofs << j.at(k) << ' ' << j.at(k + 1) << ' ' << j.at(k + 2) << ' ' << '\n';
     }
   }
+  auto end = std::chrono::high_resolution_clock::now();
+  std::cout << "time: "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(end -
+                                                                     start)
+                   .count()
+            << std::endl;
   return 0;
 }
