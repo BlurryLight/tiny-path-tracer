@@ -34,7 +34,7 @@ public:
   virtual bool scatter(const ray &r_in, const hit_record &rec,
                        vec3 &attenuation, ray &scattered) const override {
     vec3 target = rec.point + random_in_unit_sphere();
-    scattered = ray(rec.point, target - rec.point);
+    scattered = ray(rec.point, target - rec.point, r_in.time());
     attenuation = albedo_;
     return true;
   }
@@ -58,7 +58,8 @@ public:
   virtual bool scatter(const ray &r_in, const hit_record &rec,
                        vec3 &attenuation, ray &scattered) const override {
     vec3 reflected = reflect(unit_vector(r_in.direction_), rec.normal);
-    scattered = ray(rec.point, reflected + fuzz_ * random_in_unit_sphere());
+    scattered = ray(rec.point, reflected + fuzz_ * random_in_unit_sphere(),
+                    r_in.time());
     attenuation = albedo_;
     return (dot(scattered.direction(), rec.normal) > 0);
   }
@@ -132,9 +133,9 @@ public:
     //反射概率
     //因为我们要采样多次，所以这里可以用随机数来模拟概率(蒙特卡罗)
     if (drand_r() < reflect_prob) {
-      scattered = ray(rec.point, reflected);
+      scattered = ray(rec.point, reflected, r_in.time());
     } else {
-      scattered = ray(rec.point, refracted);
+      scattered = ray(rec.point, refracted, r_in.time());
     }
     return true;
   }

@@ -15,9 +15,12 @@ public:
   // lookat is the point to look at
   // vup, the view up vector to project on the new plane when we incline it. We
   // can also tilt the plane
-  camera(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov,
-         float aspect) { // vfov is top to bottom in degrees, field of view on
-                         // the vertical axis
+  camera(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, float aspect,
+         float t0,
+         float t1) { // vfov is top to bottom in degrees, field of view on
+                     // the vertical axis
+    time0 = t0;
+    time1 = t1;
     vec3 w, u, v;
     float theta = vfov * M_PI / 180; // convert to radiants
     float half_height = tan(theta / 2);
@@ -31,14 +34,17 @@ public:
     vertical = 2 * half_height * v;
   }
   ray get_ray(float s, float t) {
+    float time = time0 + drand_r() * (time1 - time0);
     return ray(origin,
-               lower_left_corner + s * horizontal + t * vertical - origin);
+               lower_left_corner + s * horizontal + t * vertical - origin,
+               time);
   }
 
   vec3 origin;
   vec3 lower_left_corner;
   vec3 horizontal;
   vec3 vertical;
+  float time0, time1; // aperture open time
 };
 
 class camera_with_blur {

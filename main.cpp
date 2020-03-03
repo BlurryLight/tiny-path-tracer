@@ -45,13 +45,15 @@ hitable *random_scene() {
       vec3 center(a + 0.9 * drand_r(), 0.2, b + 0.9 * drand_r());
       if ((center - vec3(4, 0.2, 0)).length() > 0.9) {
         if (choose_mat < 0.8) { // diffuse
-          list[i++] = new sphere(
-              center, 0.2,
+          //          list[i++] = new sphere(
+          list[i++] = new moving_sphere(
+              center, center + vec3(0, 0.5 * drand_r(), 0), 0.0, 1.0, 0.2,
               new lambertian(vec3(drand_r() * drand_r(), drand_r() * drand_r(),
                                   drand_r() * drand_r())));
         } else if (choose_mat < 0.95) { // metal
-          list[i++] = new sphere(
-              center, 0.2,
+          list[i++] = new moving_sphere(
+              center, center + vec3(0.5 * drand_r(), 0.5 * drand_r(), 0.0), 0.0,
+              1.0, 0.2,
               new metal(vec3(0.5 * (1 + drand_r()), 0.5 * (1 + drand_r()),
                              0.5 * (1 + drand_r())),
                         0.5 * drand_r()));
@@ -97,11 +99,13 @@ int main(int argc, char **argv) {
   ofs << "P3\n" << nx << " " << ny << "\n255\n";
 
   hitable *world = random_scene();
-  vec3 lookfrom = vec3(9, 2, 3);
-  vec3 lookat = vec3(0, 0, -1);
+  vec3 lookfrom = vec3(13, 2, 3);
+  vec3 lookat = vec3(0, 0, 0);
   float dist_to_focus = (lookfrom - lookat).length();
-  camera_with_blur cam(lookfrom, lookat, vec3(0, 1, 0), 90.0,
-                       float(nx) / (float)ny, aperture, dist_to_focus);
+  //  camera_with_blur cam(lookfrom, lookat, vec3(0, 1, 0), 90.0,
+  //                       float(nx) / (float)ny, aperture, dist_to_focus);
+  camera cam(lookfrom, lookat, vec3(0, 1, 0), 90.0, float(nx) / (float)ny, 0.0,
+             1.0);
 
   std::mutex mutex_;
   std::map<int, std::vector<int>> result;
