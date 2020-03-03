@@ -14,6 +14,10 @@
 #include <mutex>
 #include <thread>
 
+#ifdef __linux__
+#include <cstdlib> //std::system
+#endif
+
 vec3 color(const ray &r, hitable *world, int depth) {
   hit_record rec;
   if (world->hit(r, 0.001, MAXFLOAT, rec)) {
@@ -161,5 +165,13 @@ int main(int argc, char **argv) {
                                                                      start)
                    .count()
             << std::endl;
+#ifdef __linux__
+  // convert ppm to jpg
+  // need imagemagic & Linux
+  std::string command = "convert " + filename + " " +
+                        filename.substr(0, filename.find_first_of('.')) +
+                        ".jpg";
+  std::system(command.c_str());
+#endif
   return 0;
 }
