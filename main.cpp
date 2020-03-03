@@ -2,6 +2,7 @@
 #include "hitableList.h"
 #include "ray.h"
 #include "sphere.h"
+#include "third_party/inipp.h"
 #include "vec3.h"
 #include <algorithm>
 #include <condition_variable>
@@ -72,16 +73,33 @@ hitable *random_scene() {
 int main(int argc, char **argv) {
   std::string filename{"img.ppm"};
   std::ofstream ofs(filename, std::ios::out);
+
+  std::ifstream config("config.ini");
+  // default value
   int nx = 400;
   int ny = 200;
-  int ns = 100; // anti-alisaing sample
+  int ns = 10; // anti-alisaing sample
+  float aperture = 0.2; // the larger, the edge becomes more blurred
+  // read value from config
+  inipp::Ini<char> ini;
+  ini.parse(config);
+  inipp::extract(ini.sections["DEFAULT"]["width"], nx);
+  inipp::extract(ini.sections["DEFAULT"]["height"], ny);
+  inipp::extract(ini.sections["DEFAULT"]["sample"], ns);
+  inipp::extract(ini.sections["DEFAULT"]["aperture"], aperture);
+
+  std::cout << "config :\n"
+            << "width: " << nx << '\n'
+            << "height: " << ny << '\n'
+            << "sample: " << ns << '\n'
+            << "aperture: " << aperture << std::endl;
+
   ofs << "P3\n" << nx << " " << ny << "\n255\n";
 
   hitable *world = random_scene();
   vec3 lookfrom = vec3(9, 2, 3);
   vec3 lookat = vec3(0, 0, -1);
   float dist_to_focus = (lookfrom - lookat).length();
-  float aperture = 0.1;
   camera_with_blur cam(lookfrom, lookat, vec3(0, 1, 0), 90.0,
                        float(nx) / (float)ny, aperture, dist_to_focus);
 
