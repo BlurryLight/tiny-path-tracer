@@ -56,8 +56,8 @@ hitable *random_scene() {
                                   drand_r() * drand_r())));
         } else if (choose_mat < 0.95) { // metal
           list[i++] = new moving_sphere(
-              center, center + vec3(0.5 * drand_r(), 0.5 * drand_r(), 0.0), 0.0,
-              1.0, 0.2,
+              center, center + vec3(-0.5f + drand_r(), -0.5f + drand_r(), 0.0),
+              0.0, 1.0, 0.2,
               new metal(vec3(0.5 * (1 + drand_r()), 0.5 * (1 + drand_r()),
                              0.5 * (1 + drand_r())),
                         0.5 * drand_r()));
@@ -86,19 +86,21 @@ int main(int argc, char **argv) {
   int ny = 200;
   int ns = 10; // anti-alisaing sample
   float aperture = 0.2; // the larger, the edge becomes more blurred
+  float time0 = 0.0f;
+  float time1 = 1.0f;
   // read value from config
   inipp::Ini<char> ini;
   ini.parse(config);
   inipp::extract(ini.sections["DEFAULT"]["width"], nx);
   inipp::extract(ini.sections["DEFAULT"]["height"], ny);
   inipp::extract(ini.sections["DEFAULT"]["sample"], ns);
-  inipp::extract(ini.sections["DEFAULT"]["aperture"], aperture);
 
-  std::cout << "config :\n"
-            << "width: " << nx << '\n'
-            << "height: " << ny << '\n'
-            << "sample: " << ns << '\n'
-            << "aperture: " << aperture << std::endl;
+  inipp::extract(ini.sections["BLUR"]["aperture"], aperture);
+
+  inipp::extract(ini.sections["CAM_MOTION"]["start_time"], time0);
+  inipp::extract(ini.sections["CAM_MOTION"]["end_time"], time1);
+
+  ini.generate(std::cout);
 
   ofs << "P3\n" << nx << " " << ny << "\n255\n";
 
@@ -108,8 +110,8 @@ int main(int argc, char **argv) {
   float dist_to_focus = (lookfrom - lookat).length();
   //  camera_with_blur cam(lookfrom, lookat, vec3(0, 1, 0), 90.0,
   //                       float(nx) / (float)ny, aperture, dist_to_focus);
-  camera cam(lookfrom, lookat, vec3(0, 1, 0), 90.0, float(nx) / (float)ny, 0.0,
-             1.0);
+  camera cam(lookfrom, lookat, vec3(0, 1, 0), 90.0, float(nx) / (float)ny,
+             aperture, dist_to_focus, time0, time1);
 
   std::mutex mutex_;
   std::map<int, std::vector<int>> result;
@@ -168,6 +170,7 @@ int main(int argc, char **argv) {
 #ifdef __linux__
   // convert ppm to jpg
   // need imagemagic & Linux
+  ofs.flush();
   std::string command = "convert " + filename + " " +
                         filename.substr(0, filename.find_first_of('.')) +
                         ".jpg";

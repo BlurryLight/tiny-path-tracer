@@ -9,6 +9,7 @@ inline vec3 random_in_unit_disk() {
   } while (dot(p, p) >= 1.0);
   return p;
 }
+/*
 class camera {
 public:
   // lookfrom is the origin
@@ -46,11 +47,17 @@ public:
   vec3 vertical;
   float time0, time1; // aperture open time
 };
+*/
 
 class camera_with_blur {
 public:
   camera_with_blur(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov,
-                   float aspect, float aperture, float focus_dist) {
+                   float aspect, float aperture, float focus_dist, float t0,
+                   float t1) {
+    // aperture = 0.0, edge-blur disappears
+    // time0 = time1 = 0.0, motion-blur off
+    time0 = t0;
+    time1 = t1;
     lens_radius_ = aperture / 2;
     float theta = vfov * M_PI / 180;
     float half_height = tan(theta / 2);
@@ -68,8 +75,11 @@ public:
   ray get_ray(float s, float t) {
     vec3 rd = lens_radius_ * random_in_unit_disk();
     vec3 offset = u_ * rd.x() + v_ * rd.y();
-    return ray(origin_ + offset, lower_left_corner_ + s * horizontal_ +
-                                     t * vertical_ - origin_ - offset);
+    float time = time0 + drand_r() * (time1 - time0);
+    return ray(origin_ + offset,
+               lower_left_corner_ + s * horizontal_ + t * vertical_ - origin_ -
+                   offset,
+               time);
   }
 
   vec3 origin_;
@@ -78,6 +88,9 @@ public:
   vec3 horizontal_;
   vec3 u_, v_, w_;
   float lens_radius_;
+  float time0, time1; // aperture open time
 };
+
+using camera = camera_with_blur;
 
 #endif // CAMERA_H
