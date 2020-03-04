@@ -166,14 +166,14 @@ int main(int argc, char **argv) {
     }
   }
   auto end = std::chrono::high_resolution_clock::now();
+
+  // clang-format off
   std::cout << "time: "
-            << std::chrono::duration_cast<std::chrono::milliseconds>(end -
-                                                                     start)
-                   .count()
-            << std::endl;
+            << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() /1000.0f
+            << " ms" << std::endl;
 #ifdef __linux__
   // convert ppm to jpg
-  // need imagemagic & Linux
+  // need imagemagick & Linux
   ofs.flush();
   std::string command = "convert " + filename + " " +
                         filename.substr(0, filename.find_first_of('.')) +
