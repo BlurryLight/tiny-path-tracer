@@ -74,7 +74,11 @@ hitable *random_scene() {
   list[i++] =
       new sphere(vec3(4, 1, 0), 1.0, new metal(vec3(0.7, 0.6, 0.5), 0.0));
 
-  return new hitable_list(list, i);
+  hitable **list_bvh = new hitable *[10];
+  int k = 0;
+  return new bvh_node(list, i, 0, 1);
+  //  return new hitable_list(list, i);
+  //  return new hitable_list(list_bvh, k);
 }
 int main(int argc, char **argv) {
   std::string filename{"img.ppm"};

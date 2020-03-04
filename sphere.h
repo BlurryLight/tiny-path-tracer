@@ -11,6 +11,7 @@ public:
 
   virtual bool hit(const ray &r, float t_min, float t_max,
                    hit_record &rec) const override;
+  virtual bool bounding_box(float t0, float t1, AABB &box) const override;
   vec3 center_;
   float radius_;
   material *mat_ptr_;
@@ -34,6 +35,7 @@ public:
   }
   virtual bool hit(const ray &r, float t_min, float t_max,
                    hit_record &rec) const override;
+  virtual bool bounding_box(float t0, float t1, AABB &box) const override;
 
   vec3 center0_, center1_;
   float radius_;
@@ -70,6 +72,12 @@ bool sphere::hit(const ray &r, float t_min, float t_max,
   return false;
 }
 
+bool sphere::bounding_box(float t0, float t1, AABB &box) const {
+  box = AABB(center_ - vec3(radius_, radius_, radius_),
+             center_ + vec3(radius_, radius_, radius_));
+  return true;
+}
+
 bool moving_sphere::hit(const ray &r, float t_min, float t_max,
                         hit_record &rec) const {
   vec3 oc = r.origin() - center(r.time());
@@ -98,6 +106,16 @@ bool moving_sphere::hit(const ray &r, float t_min, float t_max,
     }
   }
   return false;
+}
+
+bool moving_sphere::bounding_box(float t0, float t1, AABB &box) const {
+
+  AABB box0{center(t0) - vec3(radius_, radius_, radius_),
+            center(t0) + vec3(radius_, radius_, radius_)};
+  AABB box1{center(t1) - vec3(radius_, radius_, radius_),
+            center(t1) + vec3(radius_, radius_, radius_)};
+  box = surrounding_box(box0, box1);
+  return true;
 }
 
 #endif // SPHERE_H
