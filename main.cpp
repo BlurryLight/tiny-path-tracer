@@ -1,5 +1,5 @@
 #include "camera.h"
-#include "hitableList.h"
+#include "hitable_list.h"
 #include "ray.h"
 #include "sphere.h"
 #include "third_party/inipp.h"

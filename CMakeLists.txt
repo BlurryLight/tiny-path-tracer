@@ -4,8 +4,15 @@ project(Path_tracer LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-find_package(OpenMP REQUIRED)
-include_directories(${OpenMP_CXX_INCLUDE_DIRS})
+find_package(Threads REQUIRED)
 file(COPY "config.ini" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-add_executable(Path_tracer main.cpp vec3.h ray.h ray.cc hitable.h sphere.h hitableList.h camera.h third_party/inipp.h)
-target_link_libraries(Path_tracer PRIVATE OpenMP::OpenMP_CXX pthread)
+set(HEADER_LIST
+    headers/vec3.h headers/ray.h headers/hitable.h headers/sphere.h headers/hitable_list.h headers/camera.h
+    headers/utils.h headers/aabb.h
+    third_party/inipp.h)
+
+set(SRC_LIST
+    src/ray.cc src/hitable.cc src/camera.cc src/hitable_list.cc src/sphere.cc src/utils.cc src/aabb.cc)
+include_directories(headers/)
+add_executable(Path_tracer main.cpp ${HEADER_LIST} ${SRC_LIST})
+target_link_libraries(Path_tracer PRIVATE Threads::Threads)

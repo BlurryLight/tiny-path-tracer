@@ -2,12 +2,6 @@
 #define RAY_H
 #include "vec3.h"
 #include <random>
-// thread-safe random generator
-inline double drand_r(double min = 0.0, double max = 1.0) {
-  static thread_local std::mt19937 generator;
-  std::uniform_real_distribution<double> dis(min, max); //[min,max)
-  return dis(generator);
-}
 class ray {
 public:
   ray();
