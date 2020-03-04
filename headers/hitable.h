@@ -74,41 +74,5 @@ public:
   AABB box_;
 };
 
-/*
-auto box_x_compare = [](hitable *ah, hitable *bh) -> bool {
-  AABB box_left, box_right;
-  if (!ah->bounding_box(0, 0, box_left) || !bh->bounding_box(0, 0, box_right)) {
-    std::cout << "No bounding box in BVH node constructor" << std::endl;
-    exit(-1);
-  }
-  if (box_left.min().x() - box_right.min().x() < 0.0f) {
-    return false;
-  }
-  return true;
-};
-
-auto box_y_compare = [](hitable *ah, hitable *bh) -> bool {
-  AABB box_left, box_right;
-  if (!ah->bounding_box(0, 0, box_left) || !bh->bounding_box(0, 0, box_right)) {
-    std::cout << "No bounding box in BVH node constructor" << std::endl;
-    exit(-1);
-  }
-  if (box_left.min().y() - box_right.min().y() < 0.0f) {
-    return false;
-  }
-  return true;
-};
-auto box_z_compare = [](hitable *ah, hitable *bh) -> bool {
-  AABB box_left, box_right;
-  if (!ah->bounding_box(0, 0, box_left) || !bh->bounding_box(0, 0, box_right)) {
-    std::cout << "No bounding box in BVH node constructor" << std::endl;
-    exit(-1);
-  }
-  if (box_left.min().z() - box_right.min().z() < 0.0f) {
-    return false;
-  }
-  return true;
-};
-*/
 
 #endif // HITABLE_H

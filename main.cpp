@@ -170,7 +170,7 @@ int main(int argc, char **argv) {
   // clang-format off
   std::cout << "time: "
             << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() /1000.0f
-            << " ms" << std::endl;
+            << " s" << std::endl;
 #ifdef __linux__
   // convert ppm to jpg
   // need imagemagick & Linux

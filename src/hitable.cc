@@ -1,6 +1,7 @@
 #include "hitable.h"
 #include "aabb.h"
 #include "utils.h"
+#include <array>
 
 bool lambertian::scatter(const ray &r_in, const hit_record &rec,
                          vec3 &attenuation, ray &scattered) const {
@@ -72,56 +73,54 @@ bool dielectric::scatter(const ray &r_in, const hit_record &rec,
 }
 
 // BVH compare operator
-static int box_x_compare(const void *a, const void *b) {
+
+auto box_x_compare_l = [](const hitable *ah, const hitable *bh) -> bool {
   AABB box_left, box_right;
-  hitable *ah = *(hitable **)a;
-  hitable *bh = *(hitable **)b;
+  auto a = ah->bounding_box(0, 0, box_left);
+  auto b = bh->bounding_box(0, 0, box_right);
+  if (!a || !b) {
+    std::cout << "No bounding box in BVH node constructor" << std::endl;
+    exit(-1);
+  }
+  if (std::isgreaterequal(box_left.min().x(), box_right.min().x())) {
+    return false;
+  }
+  return true;
+};
 
-  if (!ah->bounding_box(0, 0, box_left) || !bh->bounding_box(0, 0, box_right))
-    std::cerr << "no bounding box in bvh_node constructor\n";
-
-  if (box_left.min().x() - box_right.min().x() < 0.0)
-    return -1;
-  else
-    return 1;
-}
-
-static int box_y_compare(const void *a, const void *b) {
+auto box_y_compare_l = [](const hitable *ah, const hitable *bh) -> bool {
   AABB box_left, box_right;
-  hitable *ah = *(hitable **)a;
-  hitable *bh = *(hitable **)b;
+  auto a = ah->bounding_box(0, 0, box_left);
+  auto b = bh->bounding_box(0, 0, box_right);
+  if (!a || !b) {
+    std::cout << "No bounding box in BVH node constructor" << std::endl;
+    exit(-1);
+  }
+  if (std::isgreaterequal(box_left.min().y(), box_right.min().y())) {
+    return false;
+  }
+  return true;
+};
 
-  if (!ah->bounding_box(0, 0, box_left) || !bh->bounding_box(0, 0, box_right))
-    std::cerr << "no bounding box in bvh_node constructor\n";
-
-  if (box_left.min().y() - box_right.min().y() < 0.0)
-    return -1;
-  else
-    return 1;
-}
-
-static int box_z_compare(const void *a, const void *b) {
+auto box_z_compare_l = [](hitable *ah, hitable *bh, int i = 0) -> bool {
   AABB box_left, box_right;
-  hitable *ah = *(hitable **)a;
-  hitable *bh = *(hitable **)b;
-
-  if (!ah->bounding_box(0, 0, box_left) || !bh->bounding_box(0, 0, box_right))
-    std::cerr << "no bounding box in bvh_node constructor\n";
-
-  if (box_left.min().z() - box_right.min().z() < 0.0)
-    return -1;
-  else
-    return 1;
-}
-
+  if (!ah->bounding_box(0, 0, box_left) || !bh->bounding_box(0, 0, box_right)) {
+    std::cout << "No bounding box in BVH node constructor" << std::endl;
+    exit(-1);
+  }
+  if (std::isgreaterequal(box_left.min().z(), box_right.min().z())) {
+    return false;
+  }
+  return true;
+};
 bvh_node::bvh_node(hitable **l, int n, float time0, float time1) {
   int axis = int(drand_r(0, 3.0));
   if (axis == 0) {
-    std::qsort(l, n, sizeof(hitable *), box_x_compare);
+    std::sort(l, l + n, box_x_compare_l);
   } else if (axis == 1) {
-    std::qsort(l, n, sizeof(hitable *), box_y_compare);
+    std::sort(l, l + n, box_y_compare_l);
   } else {
-    std::qsort(l, n, sizeof(hitable *), box_z_compare);
+    std::sort(l, l + n, box_z_compare_l);
   }
   if (n == 1) {
     left_ = right_ = l[0];
