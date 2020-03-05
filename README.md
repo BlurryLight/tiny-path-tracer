@@ -17,3 +17,9 @@ ALL HONOR BELONGS TO Peter Shirley.
 - [x] Bounding Volume Hierarchies优化 (CPU并行，1600p x 1600p x 300 samples,渲染时长: 80.1s)
 
 ![BVH](image/2.jpg)
+
+- [x] perlin noise(柏林噪音)
+
+![perlin1](image/3.jpg)
+
+![perlin2](image/4.jpg)
