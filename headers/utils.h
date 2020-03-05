@@ -60,4 +60,14 @@ private:
                            float w) const;
 };
 
+inline void get_uv_map(const vec3 &p, float &u, float &v) {
+  u = std::atan2(p.z(), p.x()) / (2 * M_PI);
+  v = std::asin(p.y()) / M_PI;
+  u += 0.5f;
+  v += 0.5f;
+}
+
+unsigned char *load_image_texture(std::string filename, int &width, int &height,
+                                  int &channels);
+
 #endif

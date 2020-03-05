@@ -4,6 +4,8 @@
 #include "ray.h"
 #include <random>
 #include <sphere.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 vec3 random_in_unit_disk() {
   vec3 p;
   do {
@@ -116,7 +118,7 @@ hitable *random_scene() {
   //  return new hitable_list(list_bvh, k);
 }
 
-hitable *two_spheres() {
+hitable *two_checker_spheres() {
   texture *checker =
       new checker_texture(new constant_texture({0.1, 0.1, 0.1}), // white
                           new constant_texture({0.9, 0.9, 0.9})  // black
@@ -207,4 +209,10 @@ hitable *two_perlin_spheres() {
   list[0] = new sphere(vec3(0, 2, 0), 2, new lambertian(perlin_texture));
   list[1] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(perlin_texture));
   return new hitable_list(list, 2);
+}
+
+unsigned char *load_image_texture(std::string filename, int &width, int &height,
+                                  int &channels) {
+  auto data = stbi_load(filename.c_str(), &width, &height, &channels, 0);
+  return data;
 }

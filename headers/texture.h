@@ -39,5 +39,15 @@ public:
   perlin_noise noise_;
   float scale_;
 };
+class image_texture : public texture {
+public:
+  image_texture() {}
+  image_texture(unsigned char *pixels, int width, int height)
+      : data_(pixels), width_(width), height_(height) {}
+  virtual vec3 value(float u, float v, const vec3 &p) const override;
+
+  unsigned char *data_;
+  int width_, height_;
+};
 
 #endif
