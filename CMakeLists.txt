@@ -15,6 +15,12 @@ set(SRC_LIST
     src/ray.cc src/hitable.cc src/camera.cc src/hitable_list.cc src/sphere.cc src/utils.cc src/aabb.cc
     src/texture.cc
     )
+
+IF(CMAKE_BUILD_TYPE MATCHES "Debug")
+    message("debug mode")
+    add_definitions(-DDEBUG_MODE)
+ENDIF(CMAKE_BUILD_TYPE MATCHES "Debug")
+
 include_directories(headers/)
 add_executable(Path_tracer main.cpp ${HEADER_LIST} ${SRC_LIST})
 target_link_libraries(Path_tracer PRIVATE Threads::Threads)

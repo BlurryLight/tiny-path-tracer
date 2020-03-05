@@ -45,6 +45,13 @@ int main(int argc, char **argv) {
 
   ini.generate(std::cout);
 
+  std::cout << "<===========>" << std::endl;
+#ifdef DEBUG_MODE
+  std::cout << "IN DEBUG MODE" << std::endl;
+#else
+  std::cout << "IN RELEASE MODE" << std::endl;
+#endif
+  std::cout << "<===========>" << std::endl;
   ofs << "P3\n" << nx << " " << ny << "\n255\n";
 
   //  hitable *world = random_scene();
