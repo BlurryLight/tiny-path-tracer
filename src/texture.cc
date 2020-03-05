@@ -1,4 +1,5 @@
 #include "texture.h"
+#include "utils.h"
 
 vec3 checker_texture::value(float u, float v, const vec3 &p) const {
   //(0,0,0) = positive -> even
@@ -8,8 +9,13 @@ vec3 checker_texture::value(float u, float v, const vec3 &p) const {
       std::sin(10 * p.x()) * std::sin(10 * p.y()) * std::sin(10 * p.z());
   if (std::isless(sin_sign, 0.0f)) // negative
   {
-    return odd->value(u, v, p);
+    return odd_->value(u, v, p);
   } else {
-    return even->value(u, v, p);
+    return even_->value(u, v, p);
   }
+}
+
+vec3 perlin_noise_texture::value(float u, float v, const vec3 &p) const {
+
+  return vec3(1, 1, 1) * noise_.noise(p);
 }

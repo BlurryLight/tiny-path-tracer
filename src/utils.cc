@@ -127,3 +127,34 @@ hitable *two_spheres() {
   list[1] = new sphere(vec3(0, -10, 0), 10, new lambertian(checker));
   return new hitable_list(list, 2);
 }
+
+std::array<float, 256> perlin_noise::random_float_;
+std::array<int, 256> perlin_noise::permute_x_;
+std::array<int, 256> perlin_noise::permute_y_;
+std::array<int, 256> perlin_noise::permute_z_;
+
+float perlin_noise::noise(const vec3 &p) const {
+  float u = p.x() - std::floor(p.x());
+  float v = p.y() - std::floor(p.y());
+  float w = p.z() - std::floor(p.z());
+
+  auto valid_index = [](int &&index) {
+    int tmp = index % 255;
+    return tmp > 0 ? tmp : (255 + tmp);
+  };
+  int i = valid_index(std::floor(p.x()));
+  int j = valid_index(std::floor(p.y()));
+  int k = valid_index(std::floor(p.z()));
+
+  // I guess it's a stable hash method to lookup float from random_float
+  return random_float_[permute_x_[i] ^ permute_y_[j] ^ permute_z_[k]];
+}
+
+hitable *two_perlin_spheres() {
+  texture *perlin_texture = new perlin_noise_texture();
+  int n = 3;
+  hitable **list = new hitable *[n];
+  list[0] = new sphere(vec3(0, 10, 0), 10, new lambertian(perlin_texture));
+  list[1] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(perlin_texture));
+  return new hitable_list(list, 2);
+}
