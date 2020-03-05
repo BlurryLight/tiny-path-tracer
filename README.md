@@ -23,3 +23,7 @@ ALL HONOR BELONGS TO Peter Shirley.
 ![perlin1](image/3.jpg)
 
 ![perlin2](image/4.jpg)
+
+- [x] sphere uv mapping
+
+![earth](image/5.jpg)
