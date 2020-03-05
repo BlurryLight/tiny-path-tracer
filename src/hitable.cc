@@ -73,54 +73,36 @@ bool dielectric::scatter(const ray &r_in, const hit_record &rec,
 }
 
 // BVH compare operator
-
-auto box_x_compare_l = [](const hitable *ah, const hitable *bh) -> bool {
-  AABB box_left, box_right;
-  auto a = ah->bounding_box(0, 0, box_left);
-  auto b = bh->bounding_box(0, 0, box_right);
-  if (!a || !b) {
-    std::cout << "No bounding box in BVH node constructor" << std::endl;
-    exit(-1);
+struct box_axis_compare {
+  // 0 x_axis_compare
+  // 1 y
+  // 2 z
+  //<0 || > 2 ub
+  box_axis_compare(int axis) : axis_(axis) {}
+  bool operator()(const hitable *ah, const hitable *bh) {
+    AABB box_left, box_right;
+    auto a = ah->bounding_box(0, 0, box_left);
+    auto b = bh->bounding_box(0, 0, box_right);
+    if (!a || !b) {
+      std::cout << "No bounding box in BVH node constructor" << std::endl;
+      exit(-1);
+    }
+    if (std::isgreaterequal(box_left.min()[axis_], box_right.min()[axis_])) {
+      return false;
+    }
+    return true;
   }
-  if (std::isgreaterequal(box_left.min().x(), box_right.min().x())) {
-    return false;
-  }
-  return true;
+  int axis_ = 0;
 };
 
-auto box_y_compare_l = [](const hitable *ah, const hitable *bh) -> bool {
-  AABB box_left, box_right;
-  auto a = ah->bounding_box(0, 0, box_left);
-  auto b = bh->bounding_box(0, 0, box_right);
-  if (!a || !b) {
-    std::cout << "No bounding box in BVH node constructor" << std::endl;
-    exit(-1);
-  }
-  if (std::isgreaterequal(box_left.min().y(), box_right.min().y())) {
-    return false;
-  }
-  return true;
-};
-
-auto box_z_compare_l = [](hitable *ah, hitable *bh, int i = 0) -> bool {
-  AABB box_left, box_right;
-  if (!ah->bounding_box(0, 0, box_left) || !bh->bounding_box(0, 0, box_right)) {
-    std::cout << "No bounding box in BVH node constructor" << std::endl;
-    exit(-1);
-  }
-  if (std::isgreaterequal(box_left.min().z(), box_right.min().z())) {
-    return false;
-  }
-  return true;
-};
 bvh_node::bvh_node(hitable **l, int n, float time0, float time1) {
   int axis = int(drand_r(0, 3.0));
   if (axis == 0) {
-    std::sort(l, l + n, box_x_compare_l);
+    std::sort(l, l + n, box_axis_compare(0));
   } else if (axis == 1) {
-    std::sort(l, l + n, box_y_compare_l);
+    std::sort(l, l + n, box_axis_compare(1));
   } else {
-    std::sort(l, l + n, box_z_compare_l);
+    std::sort(l, l + n, box_axis_compare(2));
   }
   if (n == 1) {
     left_ = right_ = l[0];
