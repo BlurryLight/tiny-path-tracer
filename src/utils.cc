@@ -128,7 +128,7 @@ hitable *two_spheres() {
   return new hitable_list(list, 2);
 }
 
-std::array<float, 256> perlin_noise::random_float_;
+std::array<vec3, 256> perlin_noise::random_vec3_;
 std::array<int, 256> perlin_noise::permute_x_;
 std::array<int, 256> perlin_noise::permute_y_;
 std::array<int, 256> perlin_noise::permute_z_;
@@ -148,38 +148,37 @@ float perlin_noise::noise(const vec3 &p) const {
   int j = valid_index(std::floor(p.y()));
   int k = valid_index(std::floor(p.z()));
 
-  float vertices[2][2][2]; // in a cube, tri-linear interpolate
+  vec3 vertices_vec[2][2][2];
   for (int ti = 0; ti < 2; ti++) {
     for (int tj = 0; tj < 2; tj++) {
       for (int tk = 0; tk < 2; tk++) {
-        vertices[ti][tj][tk] = random_float_[permute_x_[valid_index(i + ti)] ^
-                                             permute_y_[valid_index(j + tj)] ^
-                                             permute_z_[valid_index(k + tk)]];
+        vec3 tmp = random_vec3_[permute_x_[valid_index(i + ti)] ^
+                                permute_y_[valid_index(j + tj)] ^
+                                permute_z_[valid_index(k + tk)]];
+        vertices_vec[ti][tj][tk] = tmp;
       }
     }
   }
   //  return trilinear_interpolate(vertices, u, v, w);
-  return perlin_interpolate(vertices, u, v, w);
+  return perlin_interpolate(vertices_vec, u, v, w);
 
   // I guess it's a stable hash method to lookup float from random_float
-  return random_float_[permute_x_[i] ^ permute_y_[j] ^ permute_z_[k]];
+  //  return random_float_[permute_x_[i] ^ permute_y_[j] ^ permute_z_[k]];
 }
 
-float perlin_noise::trilinear_interpolate(float vertex[2][2][2], float u,
-                                          float v, float w) const {
-  float accum = 0.0f;
-  for (int i = 0; i < 2; i++) {
-    for (int j = 0; j < 2; j++) {
-      for (int k = 0; k < 2; k++) {
-        accum += (i * u + (1 - i) * (1 - u)) * (j * v + (1 - j) * (1 - v)) *
-                 (k * w + (1 - k) * (1 - w)) * vertex[i][j][k];
-      }
-    }
+float perlin_noise::turb(const vec3 &p, int depth) const {
+  float accum = 0;
+  vec3 tmp = p;
+  float weight = 1.0;
+  for (int i = 0; i < depth; i++) {
+    accum += weight * noise(tmp);
+    weight *= 0.5;
+    tmp *= 2;
   }
-  return accum;
+  return std::abs(accum);
 }
 
-float perlin_noise::perlin_interpolate(float vertex[2][2][2], float u, float v,
+float perlin_noise::perlin_interpolate(vec3 vertex[2][2][2], float u, float v,
                                        float w) const {
   auto trans = [](float &input) {
     return (6 * std::pow(input, 5) - 15 * std::pow(input, 4) +
@@ -192,16 +191,17 @@ float perlin_noise::perlin_interpolate(float vertex[2][2][2], float u, float v,
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < 2; j++) {
       for (int k = 0; k < 2; k++) {
+        vec3 weight_v(u - i, v - j, w - k);
         accum += (i * u + (1 - i) * (1 - u)) * (j * v + (1 - j) * (1 - v)) *
-                 (k * w + (1 - k) * (1 - w)) * vertex[i][j][k];
+                 (k * w + (1 - k) * (1 - w)) * dot(vertex[i][j][k], weight_v);
       }
     }
   }
-  return accum;
+  return std::abs(accum);
 }
 
 hitable *two_perlin_spheres() {
-  texture *perlin_texture = new perlin_noise_texture(10.0f);
+  texture *perlin_texture = new perlin_noise_texture(2.0f);
   int n = 3;
   hitable **list = new hitable *[n];
   list[0] = new sphere(vec3(0, 2, 0), 2, new lambertian(perlin_texture));

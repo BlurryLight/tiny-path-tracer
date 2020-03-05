@@ -30,8 +30,12 @@ hitable *two_perlin_spheres();
 class perlin_noise {
 public:
   perlin_noise() {
-    std::generate(random_float_.begin(), random_float_.end(),
-                  []() { return drand_r(); });
+    std::generate(random_vec3_.begin(), random_vec3_.end(), []() -> vec3 {
+      float f1 = static_cast<float>(2 * drand_r() - 1);
+      float f2 = static_cast<float>(2 * drand_r() - 1);
+      float f3 = static_cast<float>(2 * drand_r() - 1);
+      return unit_vector(vec3(f1, f2, f3));
+    });
     for (int i = 0; i != permute_x_.size(); i++) {
       permute_x_[i] = i;
       permute_y_[i] = i;
@@ -45,15 +49,14 @@ public:
     std::shuffle(permute_z_.begin(), permute_z_.end(), engine);
   }
   float noise(const vec3 &p) const;
+  float turb(const vec3 &p, int depth = 5) const;
 
-  static std::array<float, 256> random_float_;
+  static std::array<vec3, 256> random_vec3_;
   static std::array<int, 256> permute_x_; // std::shuffle
   static std::array<int, 256> permute_y_; // std::shuffle
   static std::array<int, 256> permute_z_; // std::shuffle
 private:
-  float trilinear_interpolate(float vertex[2][2][2], float u, float v,
-                              float w) const;
-  float perlin_interpolate(float vertex[2][2][2], float u, float v,
+  float perlin_interpolate(vec3 vertex[2][2][2], float u, float v,
                            float w) const;
 };
 
