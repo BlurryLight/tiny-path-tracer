@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
   float dist_to_focus = (lookfrom - lookat).length();
   //  camera_with_blur cam(lookfrom, lookat, vec3(0, 1, 0), 90.0,
   //                       float(nx) / (float)ny, aperture, dist_to_focus);
-  camera cam(lookfrom, lookat, vec3(0, 1, 0), 90.0, float(nx) / (float)ny,
+  camera cam(lookfrom, lookat, vec3(0, 1, 0), 20.0, float(nx) / (float)ny,
              aperture, dist_to_focus, time0, time1);
 
   std::mutex mutex_;

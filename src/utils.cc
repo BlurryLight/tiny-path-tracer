@@ -139,22 +139,72 @@ float perlin_noise::noise(const vec3 &p) const {
   float w = p.z() - std::floor(p.z());
 
   auto valid_index = [](int &&index) {
-    int tmp = index % 255;
-    return tmp > 0 ? tmp : (255 + tmp);
+    //    int tmp = index % 255;
+    //    return tmp > 0 ? tmp : (255 + tmp);
+    //  equals
+    return index & 255;
   };
   int i = valid_index(std::floor(p.x()));
   int j = valid_index(std::floor(p.y()));
   int k = valid_index(std::floor(p.z()));
 
+  float vertices[2][2][2]; // in a cube, tri-linear interpolate
+  for (int ti = 0; ti < 2; ti++) {
+    for (int tj = 0; tj < 2; tj++) {
+      for (int tk = 0; tk < 2; tk++) {
+        vertices[ti][tj][tk] = random_float_[permute_x_[valid_index(i + ti)] ^
+                                             permute_y_[valid_index(j + tj)] ^
+                                             permute_z_[valid_index(k + tk)]];
+      }
+    }
+  }
+  //  return trilinear_interpolate(vertices, u, v, w);
+  return perlin_interpolate(vertices, u, v, w);
+
   // I guess it's a stable hash method to lookup float from random_float
   return random_float_[permute_x_[i] ^ permute_y_[j] ^ permute_z_[k]];
 }
 
+float perlin_noise::trilinear_interpolate(float vertex[2][2][2], float u,
+                                          float v, float w) const {
+  float accum = 0.0f;
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < 2; j++) {
+      for (int k = 0; k < 2; k++) {
+        accum += (i * u + (1 - i) * (1 - u)) * (j * v + (1 - j) * (1 - v)) *
+                 (k * w + (1 - k) * (1 - w)) * vertex[i][j][k];
+      }
+    }
+  }
+  return accum;
+}
+
+float perlin_noise::perlin_interpolate(float vertex[2][2][2], float u, float v,
+                                       float w) const {
+  auto trans = [](float &input) {
+    return (6 * std::pow(input, 5) - 15 * std::pow(input, 4) +
+            10 * std::pow(input, 3));
+  };
+  u = trans(u);
+  v = trans(v);
+  w = trans(w);
+  float accum = 0.0f;
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < 2; j++) {
+      for (int k = 0; k < 2; k++) {
+        accum += (i * u + (1 - i) * (1 - u)) * (j * v + (1 - j) * (1 - v)) *
+                 (k * w + (1 - k) * (1 - w)) * vertex[i][j][k];
+      }
+    }
+  }
+  return accum;
+}
+
 hitable *two_perlin_spheres() {
-  texture *perlin_texture = new perlin_noise_texture();
+  texture *perlin_texture = new perlin_noise_texture(10.0f);
   int n = 3;
   hitable **list = new hitable *[n];
-  list[0] = new sphere(vec3(0, 10, 0), 10, new lambertian(perlin_texture));
+  list[0] = new sphere(vec3(0, 2, 0), 2, new lambertian(perlin_texture));
   list[1] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(perlin_texture));
   return new hitable_list(list, 2);
 }

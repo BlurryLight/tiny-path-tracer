@@ -34,9 +34,10 @@ public:
 
 class perlin_noise_texture : public texture {
 public:
-  perlin_noise_texture() {}
+  perlin_noise_texture(float scale = 1.0) : scale_(scale) {}
   virtual vec3 value(float u, float v, const vec3 &p) const override;
   perlin_noise noise_;
+  float scale_;
 };
 
 #endif

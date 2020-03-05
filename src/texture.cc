@@ -17,5 +17,5 @@ vec3 checker_texture::value(float u, float v, const vec3 &p) const {
 
 vec3 perlin_noise_texture::value(float u, float v, const vec3 &p) const {
 
-  return vec3(1, 1, 1) * noise_.noise(p);
+  return vec3(1, 1, 1) * noise_.noise(scale_ * p);
 }

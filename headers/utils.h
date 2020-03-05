@@ -50,6 +50,11 @@ public:
   static std::array<int, 256> permute_x_; // std::shuffle
   static std::array<int, 256> permute_y_; // std::shuffle
   static std::array<int, 256> permute_z_; // std::shuffle
+private:
+  float trilinear_interpolate(float vertex[2][2][2], float u, float v,
+                              float w) const;
+  float perlin_interpolate(float vertex[2][2][2], float u, float v,
+                           float w) const;
 };
 
 #endif
