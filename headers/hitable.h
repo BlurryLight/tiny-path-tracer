@@ -3,6 +3,7 @@
 
 #include "aabb.h"
 #include "ray.h"
+#include "texture.h"
 #include <algorithm>
 // forward declaration
 class AABB;
@@ -30,11 +31,12 @@ public:
 
 class lambertian : public material {
 public:
-  lambertian(const vec3 &albedo) : albedo_(albedo) {}
+  lambertian(texture *albedo) : albedo_(albedo) {}
   virtual bool scatter(const ray &r_in, const hit_record &rec,
                        vec3 &attenuation, ray &scattered) const override;
 
-  vec3 albedo_; // reflection ratio
+  //  vec3 albedo_; // reflection ratio
+  texture *albedo_;
 };
 
 class metal : public material {
