@@ -47,13 +47,14 @@ int main(int argc, char **argv) {
 
   ofs << "P3\n" << nx << " " << ny << "\n255\n";
 
-  hitable *world = random_scene();
+  //  hitable *world = random_scene();
+  hitable *world = two_spheres();
   vec3 lookfrom = vec3(13, 2, 3);
   vec3 lookat = vec3(0, 0, 0);
   float dist_to_focus = (lookfrom - lookat).length();
   //  camera_with_blur cam(lookfrom, lookat, vec3(0, 1, 0), 90.0,
   //                       float(nx) / (float)ny, aperture, dist_to_focus);
-  camera cam(lookfrom, lookat, vec3(0, 1, 0), 90.0, float(nx) / (float)ny,
+  camera cam(lookfrom, lookat, vec3(0, 1, 0), 20.0, float(nx) / (float)ny,
              aperture, dist_to_focus, time0, time1);
 
   std::mutex mutex_;

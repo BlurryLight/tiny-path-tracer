@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "hitable.h"
+#include "hitable_list.h"
 #include "ray.h"
 #include <random>
 #include <sphere.h>
@@ -113,4 +114,16 @@ hitable *random_scene() {
   return new bvh_node(list, i, 0, 1);
   //  return new hitable_list(list, i);
   //  return new hitable_list(list_bvh, k);
+}
+
+hitable *two_spheres() {
+  texture *checker =
+      new checker_texture(new constant_texture({0.1, 0.1, 0.1}), // white
+                          new constant_texture({0.9, 0.9, 0.9})  // black
+      );
+  int n = 3;
+  hitable **list = new hitable *[n];
+  list[0] = new sphere(vec3(0, 10, 0), 10, new lambertian(checker));
+  list[1] = new sphere(vec3(0, -10, 0), 10, new lambertian(checker));
+  return new hitable_list(list, 2);
 }

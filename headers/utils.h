@@ -20,4 +20,5 @@ inline float float_max(float a, float b) { return a > b ? a : b; }
 vec3 color(const ray &r, hitable *world, int depth, int max_depth);
 
 hitable *random_scene();
+hitable *two_spheres();
 #endif
