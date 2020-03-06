@@ -56,16 +56,21 @@ vec3 color(const ray &r, hitable *world, int depth, int max_depth) {
   if (world->hit(r, 0.001, MAXFLOAT, rec)) {
     ray scattered;
     vec3 attenuation;
+    vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.point);
     if (depth < max_depth &&
         rec.mat_ptr->scatter(r, rec, attenuation, scattered)) {
-      return attenuation * color(scattered, world, depth + 1, max_depth);
+      return emitted +
+             attenuation * color(scattered, world, depth + 1, max_depth);
     } else {
-      return vec3(0, 0, 0);
+      return emitted;
     }
   } else {
-    vec3 unit_direction = unit_vector(r.direction());
-    float t = (unit_direction.y() + 1.0) * 0.5; // clamp (-1,1) to (0,1)
-    return (1 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+    //    vec3 unit_direction = unit_vector(r.direction());
+    //    float t = (unit_direction.y() + 1.0) * 0.5; // clamp (-1,1) to (0,1)
+    //    return (1 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+
+    // now we have light
+    return vec3(0, 0, 0);
   }
   // linear interperation
   // blend white with blue
@@ -215,4 +220,19 @@ unsigned char *load_image_texture(std::string filename, int &width, int &height,
                                   int &channels) {
   auto data = stbi_load(filename.c_str(), &width, &height, &channels, 0);
   return data;
+}
+
+hitable *light_spheres() {
+  texture *light_texture = (new constant_texture(vec3(4, 4, 4)));
+  int n = 10;
+  hitable **list = new hitable *[n];
+  list[0] =
+      new sphere(vec3(-1, 1, 0), 1,
+                 new lambertian(new constant_texture(vec3(0.3, 0.4, 0.5))));
+  list[1] = new sphere(vec3(-3, 1, 2), 1, new diffuse_light(light_texture));
+  list[2] = new sphere(vec3(0, -1000, 0), 1000,
+                       new lambertian(new perlin_noise_texture(4.0f)));
+  list[3] = new sphere(vec3(-3, 1, -2), 1, new diffuse_light(light_texture));
+  list[4] = new sphere(vec3(-1, 4, 0), 1, new diffuse_light(light_texture));
+  return new hitable_list(list, 5);
 }

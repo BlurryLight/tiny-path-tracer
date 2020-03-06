@@ -57,12 +57,12 @@ int main(int argc, char **argv) {
   ofs << "P3\n" << nx << " " << ny << "\n255\n";
 
   //  hitable *world = random_scene();
-  //  hitable *world = two_spheres();
+  hitable *world = light_spheres();
   //  hitable *world = two_perlin_spheres();
-  int width, height, channels;
-  auto data = load_image_texture("earthmap.jpg", width, height, channels);
-  hitable *world = new sphere(
-      {0, 0, 0}, 3, new lambertian(new image_texture(data, width, height)));
+  //  int width, height, channels;
+  //  auto data = load_image_texture("earthmap.jpg", width, height, channels);
+  //  hitable *world = new sphere(
+  //      {0, 0, 0}, 3, new lambertian(new image_texture(data, width, height)));
   vec3 lookfrom = vec3(13, 2, 3);
   vec3 lookat = vec3(0, 0, 0);
   float dist_to_focus = (lookfrom - lookat).length();

@@ -24,6 +24,7 @@ bool sphere::hit(const ray &r, float t_min, float t_max,
     if (temp < t_max && temp > t_min) {
       rec.t = temp;
       rec.point = r.point_at_parameter(temp);
+      get_uv_map((rec.point - center_) / radius_, rec.u, rec.v);
       rec.normal = (rec.point - center_) / radius_;
       rec.mat_ptr = mat_ptr_;
       return true;
@@ -32,6 +33,7 @@ bool sphere::hit(const ray &r, float t_min, float t_max,
     if (temp < t_max && temp > t_min) {
       rec.t = temp;
       rec.point = r.point_at_parameter(temp);
+      get_uv_map((rec.point - center_) / radius_, rec.u, rec.v);
       rec.normal = (rec.point - center_) / radius_;
       rec.mat_ptr = mat_ptr_;
       return true;
@@ -55,6 +57,7 @@ bool moving_sphere::hit(const ray &r, float t_min, float t_max,
       rec.t = temp;
       rec.point = r.point_at_parameter(temp);
       rec.normal = (rec.point - center(r.time())) / radius_;
+      get_uv_map((rec.point - center0_) / radius_, rec.u, rec.v);
       rec.mat_ptr = mat_ptr_;
       return true;
     }
@@ -63,6 +66,7 @@ bool moving_sphere::hit(const ray &r, float t_min, float t_max,
       rec.t = temp;
       rec.point = r.point_at_parameter(temp);
       rec.normal = (rec.point - center(r.time())) / radius_;
+      get_uv_map((rec.point - center0_) / radius_, rec.u, rec.v);
       rec.mat_ptr = mat_ptr_;
       return true;
     }

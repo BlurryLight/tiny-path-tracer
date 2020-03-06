@@ -13,10 +13,15 @@ class material {
 public:
   virtual bool scatter(const ray &r_in, const hit_record &rec,
                        vec3 &attenuation, ray &scattered) const = 0;
+  virtual vec3 emitted(float u, float v, const vec3 &p) const {
+    return vec3(0, 0, 0);
+  }
 };
 
 struct hit_record {
   float t;
+  float u = 0.0f;
+  float v = 0.0f;
   vec3 point;
   vec3 normal;
   material *mat_ptr;
@@ -61,6 +66,19 @@ public:
                        vec3 &attenuation, ray &scattered) const override;
 };
 
+class diffuse_light : public material {
+public:
+  diffuse_light(texture *a) : emit_(a) {}
+  virtual bool scatter(const ray &r_in, const hit_record &rec,
+                       vec3 &attenuation, ray &scattered) const override {
+    return false;
+  }
+  virtual vec3 emitted(float u, float v, const vec3 &p) const override {
+    return emit_->value(u, v, p);
+  }
+
+  texture *emit_;
+};
 
 class bvh_node : public hitable // binary tree
 {
@@ -75,6 +93,5 @@ public:
   hitable *right_; //
   AABB box_;
 };
-
 
 #endif // HITABLE_H
