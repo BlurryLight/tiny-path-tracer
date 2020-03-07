@@ -58,7 +58,8 @@ int main(int argc, char **argv) {
   std::cout << "<===========>" << std::endl;
   ofs << "P3\n" << nx << " " << ny << "\n255\n";
 
-  hitable *world = sphere_cornell_box();
+  //  hitable *world = sphere_cornell_box();
+  hitable *world = cornell_box();
   //  hitable *world = random_scene();
   //  hitable *world = light_spheres();
   //  hitable *world = two_perlin_spheres();

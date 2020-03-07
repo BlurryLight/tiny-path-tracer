@@ -235,7 +235,7 @@ hitable *light_spheres() {
 }
 
 hitable *sphere_cornell_box() {
-  hitable **list = new hitable *[6];
+  hitable **list = new hitable *[100];
   int i = 0;
   material *red = new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05)));
   material *white =
@@ -259,6 +259,30 @@ hitable *sphere_cornell_box() {
   //  list[i++] = new flip_normal(new xz_rect(0, 555, 0, 555, 555, white));
   //  list[i++] = new xz_rect(0, 555, 0, 555, 0, white);
   //  list[i++] = new flip_normal(new xy_rect(0, 555, 0, 555, 555, white));
+
+  //  return new hitable_list(list, i);
+  return new bvh_node(list, i, 0, 0);
+}
+
+hitable *cornell_box() {
+  hitable **list = new hitable *[6];
+  int i = 0;
+  material *red = new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05)));
+  material *white =
+      new lambertian(new constant_texture(vec3(0.73, 0.73, 0.73)));
+  material *green =
+      new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15)));
+  material *light = new diffuse_light(new constant_texture(vec3(20, 20, 20)));
+
+  list[i++] =
+      new flip_normal(new yz_rect(-300, 300, -300, 300, -300, green)); // left
+  list[i++] = new yz_rect(-300, 300, -300, 300, 300, red);             // right
+  list[i++] = new xz_rect(-300, 300, -300, 300, -300, white);          // bottom
+  list[i++] =
+      new flip_normal(new xz_rect(-300, 300, -300, 300, 300, white)); // top
+  list[i++] = new xy_rect(-300, 300, -300, 300, -300, white);
+  list[i++] = new xz_rect(-150, 150, -150, 150, 290, light);
+  list[i++] = new sphere(vec3(-100, -200, -100), 100, new dielectric(1.5));
 
   //  return new hitable_list(list, i);
   return new bvh_node(list, i, 0, 0);
