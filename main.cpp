@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
   std::cout << "<===========>" << std::endl;
   ofs << "P3\n" << nx << " " << ny << "\n255\n";
 
-  hitable *world = cornell_box();
+  hitable *world = sphere_cornell_box();
   //  hitable *world = random_scene();
   //  hitable *world = light_spheres();
   //  hitable *world = two_perlin_spheres();
@@ -71,10 +71,9 @@ int main(int argc, char **argv) {
   //  float dist_to_focus = (lookfrom - lookat).length();
 
   // cornel box
-  vec3 lookfrom = vec3(278, 278, -800);
-  vec3 lookat = vec3(278, 278, 0);
+  vec3 lookfrom = vec3(0, 0, 800);
+  vec3 lookat = vec3(0, 0, 0);
   float dist_to_focus = 10.0f;
-  fov = 40.0f;
   camera cam(lookfrom, lookat, vec3(0, 1, 0), fov, float(nx) / (float)ny,
              aperture, dist_to_focus, time0, time1);
 
@@ -120,10 +119,18 @@ int main(int argc, char **argv) {
   for (auto &i : thread_vec) {
     i.join();
   }
+  auto valid_rgb = [](int rgb) {
+    if (rgb < 0)
+      rgb = 0;
+    if (rgb > 255)
+      rgb = 255;
+    return rgb;
+  };
   for (int i = ny - 1; i >= 0; i--) {
     auto j = result.at(i);
     for (int k = 0; k < j.size(); k += 3) {
-      ofs << j.at(k) << ' ' << j.at(k + 1) << ' ' << j.at(k + 2) << ' ' << '\n';
+      ofs << valid_rgb(j.at(k)) << ' ' << valid_rgb(j.at(k + 1)) << ' '
+          << valid_rgb(j.at(k + 2)) << ' ' << '\n';
     }
   }
   auto end = std::chrono::high_resolution_clock::now();

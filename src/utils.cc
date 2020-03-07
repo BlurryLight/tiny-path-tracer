@@ -234,7 +234,7 @@ hitable *light_spheres() {
   return new hitable_list(list, 5);
 }
 
-hitable *cornell_box() {
+hitable *sphere_cornell_box() {
   hitable **list = new hitable *[6];
   int i = 0;
   material *red = new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05)));
@@ -242,14 +242,24 @@ hitable *cornell_box() {
       new lambertian(new constant_texture(vec3(0.73, 0.73, 0.73)));
   material *green =
       new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15)));
-  material *light = new diffuse_light(new constant_texture(vec3(15, 15, 15)));
+  material *light = new diffuse_light(new constant_texture(vec3(20, 20, 20)));
 
-  list[i++] = new flip_normal(new yz_rect(0, 555, 0, 555, 555, green));
-  list[i++] = new yz_rect(0, 555, 0, 555, 0, red);
-  list[i++] = new xz_rect(213, 343, 227, 332, 554, light);
-  list[i++] = new flip_normal(new xz_rect(0, 555, 0, 555, 555, white));
-  list[i++] = new xz_rect(0, 555, 0, 555, 0, white);
-  list[i++] = new flip_normal(new xy_rect(0, 555, 0, 555, 555, white));
+  list[i++] = new sphere(vec3(-1e5, 0, 0), 1e5 - 300, green);
+  list[i++] = new sphere(vec3(1e5, 0, 0), 1e5 - 300, red);
+  list[i++] = new sphere(vec3(0, 1e5, 0), 1e5 - 300, white);
+  list[i++] = new sphere(vec3(0, -1e5, 0), 1e5 - 300, white);
+  list[i++] = new sphere(vec3(0, 0, -1e5), 1e5 - 300, white);
+  list[i++] = new xz_rect(-150, 150, -150, 150, 300, light);
+  list[i++] = new sphere(vec3(-150, -200, -100), 100, new dielectric(1.5));
+  list[i++] = new sphere(vec3(150, -200, 100), 100,
+                         new metal(vec3(0.7, 0.6, 0.5), 0.0));
+  //  list[i++] = new flip_normal(new yz_rect(0, 555, 0, 555, 555, green));
+  //  list[i++] = new yz_rect(0, 555, 0, 555, 0, red);
+  //  list[i++] = new xz_rect(213, 343, 227, 332, 554, light);
+  //  list[i++] = new flip_normal(new xz_rect(0, 555, 0, 555, 555, white));
+  //  list[i++] = new xz_rect(0, 555, 0, 555, 0, white);
+  //  list[i++] = new flip_normal(new xy_rect(0, 555, 0, 555, 555, white));
 
-  return new hitable_list(list, i);
+  //  return new hitable_list(list, i);
+  return new bvh_node(list, i, 0, 0);
 }

@@ -27,6 +27,7 @@ hitable *random_scene();
 hitable *light_spheres();
 hitable *two_perlin_spheres();
 
+hitable *sphere_cornell_box();
 hitable *cornell_box();
 
 class perlin_noise {
