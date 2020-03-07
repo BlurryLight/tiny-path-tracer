@@ -94,4 +94,58 @@ public:
   AABB box_;
 };
 
+class xy_rect : public hitable {
+public:
+  xy_rect() {}
+  xy_rect(float x0, float x1, float y0, float y1, float k, material *mat)
+      : x0_(x0), x1_(x1), y0_(y0), y1_(y1), k_(k), mat_ptr_(mat) {}
+  virtual bool bounding_box(float t0, float t1, AABB &box) const override;
+  virtual bool hit(const ray &r, float t_min, float t_max,
+                   hit_record &rec) const override;
+  material *mat_ptr_;
+  float x0_, x1_, y0_, y1_, k_; // z = k
+};
+
+class xz_rect : public hitable {
+public:
+  xz_rect() {}
+  xz_rect(float x0, float x1, float z0, float z1, float k, material *mat)
+      : x0_(x0), x1_(x1), z0_(z0), z1_(z1), k_(k), mat_ptr_(mat) {}
+  virtual bool bounding_box(float t0, float t1, AABB &box) const override;
+  virtual bool hit(const ray &r, float t_min, float t_max,
+                   hit_record &rec) const override;
+  material *mat_ptr_;
+  float x0_, x1_, z0_, z1_, k_; // y = k
+};
+
+class yz_rect : public hitable {
+public:
+  yz_rect() {}
+  yz_rect(float y0, float y1, float z0, float z1, float k, material *mat)
+      : y0_(y0), y1_(y1), z0_(z0), z1_(z1), k_(k), mat_ptr_(mat) {}
+  virtual bool bounding_box(float t0, float t1, AABB &box) const override;
+  virtual bool hit(const ray &r, float t_min, float t_max,
+                   hit_record &rec) const override;
+  material *mat_ptr_;
+  float y0_, y1_, z0_, z1_, k_; // y = k
+};
+
+class flip_normal : public hitable {
+public:
+  flip_normal(hitable *p) : ptr_(p) {}
+  virtual bool bounding_box(float t0, float t1, AABB &box) const override {
+    return ptr_->bounding_box(t0, t1, box);
+  }
+  virtual bool hit(const ray &r, float t_min, float t_max,
+                   hit_record &rec) const override {
+    if (ptr_->hit(r, t_min, t_max, rec)) {
+      rec.normal = -rec.normal;
+      return true;
+    }
+    return false;
+  }
+
+  hitable *ptr_;
+};
+
 #endif // HITABLE_H

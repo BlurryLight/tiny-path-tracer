@@ -31,6 +31,7 @@ int main(int argc, char **argv) {
   float time0 = 0.0f;
   float time1 = 1.0f;
   int sample_max_recurse_depth = 50;
+  float fov = 90.0f;
   // read value from config
   inipp::Ini<char> ini;
   ini.parse(config);
@@ -39,6 +40,7 @@ int main(int argc, char **argv) {
   inipp::extract(ini.sections["DEFAULT"]["sample"], ns);
   inipp::extract(ini.sections["DEFAULT"]["recur_depth"],
                  sample_max_recurse_depth);
+  inipp::extract(ini.sections["DEFAULT"]["fov"], fov);
 
   inipp::extract(ini.sections["BLUR"]["aperture"], aperture);
 
@@ -56,19 +58,24 @@ int main(int argc, char **argv) {
   std::cout << "<===========>" << std::endl;
   ofs << "P3\n" << nx << " " << ny << "\n255\n";
 
+  hitable *world = cornell_box();
   //  hitable *world = random_scene();
-  hitable *world = light_spheres();
+  //  hitable *world = light_spheres();
   //  hitable *world = two_perlin_spheres();
   //  int width, height, channels;
   //  auto data = load_image_texture("earthmap.jpg", width, height, channels);
   //  hitable *world = new sphere(
   //      {0, 0, 0}, 3, new lambertian(new image_texture(data, width, height)));
-  vec3 lookfrom = vec3(13, 2, 3);
-  vec3 lookat = vec3(0, 0, 0);
-  float dist_to_focus = (lookfrom - lookat).length();
-  //  camera_with_blur cam(lookfrom, lookat, vec3(0, 1, 0), 90.0,
-  //                       float(nx) / (float)ny, aperture, dist_to_focus);
-  camera cam(lookfrom, lookat, vec3(0, 1, 0), 20.0, float(nx) / (float)ny,
+  //  vec3 lookfrom = vec3(13, 2, 3);
+  //  vec3 lookat = vec3(0, 0, 0);
+  //  float dist_to_focus = (lookfrom - lookat).length();
+
+  // cornel box
+  vec3 lookfrom = vec3(278, 278, -800);
+  vec3 lookat = vec3(278, 278, 0);
+  float dist_to_focus = 10.0f;
+  fov = 40.0f;
+  camera cam(lookfrom, lookat, vec3(0, 1, 0), fov, float(nx) / (float)ny,
              aperture, dist_to_focus, time0, time1);
 
   std::mutex mutex_;

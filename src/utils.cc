@@ -65,12 +65,9 @@ vec3 color(const ray &r, hitable *world, int depth, int max_depth) {
       return emitted;
     }
   } else {
-    //    vec3 unit_direction = unit_vector(r.direction());
-    //    float t = (unit_direction.y() + 1.0) * 0.5; // clamp (-1,1) to (0,1)
-    //    return (1 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
-
-    // now we have light
-    return vec3(0, 0, 0);
+    vec3 unit_direction = unit_vector(r.direction());
+    float t = (unit_direction.y() + 1.0) * 0.5; // clamp (-1,1) to (0,1)
+    return (0.1) * ((1 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0));
   }
   // linear interperation
   // blend white with blue
@@ -233,6 +230,26 @@ hitable *light_spheres() {
   list[2] = new sphere(vec3(0, -1000, 0), 1000,
                        new lambertian(new perlin_noise_texture(4.0f)));
   list[3] = new sphere(vec3(-3, 1, -2), 1, new diffuse_light(light_texture));
-  list[4] = new sphere(vec3(-1, 4, 0), 1, new diffuse_light(light_texture));
+  list[4] = new xy_rect(3, 5, 1, 3, -2, new diffuse_light(light_texture));
   return new hitable_list(list, 5);
+}
+
+hitable *cornell_box() {
+  hitable **list = new hitable *[6];
+  int i = 0;
+  material *red = new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05)));
+  material *white =
+      new lambertian(new constant_texture(vec3(0.73, 0.73, 0.73)));
+  material *green =
+      new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15)));
+  material *light = new diffuse_light(new constant_texture(vec3(15, 15, 15)));
+
+  list[i++] = new flip_normal(new yz_rect(0, 555, 0, 555, 555, green));
+  list[i++] = new yz_rect(0, 555, 0, 555, 0, red);
+  list[i++] = new xz_rect(213, 343, 227, 332, 554, light);
+  list[i++] = new flip_normal(new xz_rect(0, 555, 0, 555, 555, white));
+  list[i++] = new xz_rect(0, 555, 0, 555, 0, white);
+  list[i++] = new flip_normal(new xy_rect(0, 555, 0, 555, 555, white));
+
+  return new hitable_list(list, i);
 }

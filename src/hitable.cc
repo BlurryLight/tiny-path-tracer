@@ -154,3 +154,74 @@ bool bvh_node::hit(const ray &r, float t_min, float t_max,
   // doesn't hit box
   return false;
 }
+
+bool xy_rect::bounding_box(float t0, float t1, AABB &box) const {
+  box = AABB(vec3(x0_, y0_, k_ - 0.0001), vec3(x1_, y1_, k_ + 0.0001));
+  return true;
+}
+
+bool xy_rect::hit(const ray &r, float t_min, float t_max,
+                  hit_record &rec) const {
+  float t = (k_ - r.origin().z()) / r.direction().z();
+  if (t > t_max || t < t_min)
+    return false;
+  float x = r.origin().x() + t * r.direction().x();
+  float y = r.origin().y() + t * r.direction().y();
+  if (x < x0_ || x > x1_ || y < y0_ || y > y1_)
+    return false;
+  rec.u = (x - x0_) / (x1_ - x0_);
+  rec.v = (y - y0_) / (y1_ - y0_);
+  rec.t = t;
+  rec.mat_ptr = mat_ptr_;
+  rec.point = r.point_at_parameter(t);
+  rec.normal = vec3(0, 0, 1);
+  return true;
+}
+
+bool xz_rect::bounding_box(float t0, float t1, AABB &box) const {
+
+  box = AABB(vec3(x0_, k_ - 0.0001, z0_), vec3(x1_, k_ + 0.0001, z1_));
+  return true;
+}
+
+bool xz_rect::hit(const ray &r, float t_min, float t_max,
+                  hit_record &rec) const {
+
+  float t = (k_ - r.origin().y()) / r.direction().y();
+  if (t > t_max || t < t_min)
+    return false;
+  float x = r.origin().x() + t * r.direction().x();
+  float z = r.origin().z() + t * r.direction().z();
+  if (x < x0_ || x > x1_ || z < z0_ || z > z1_)
+    return false;
+  rec.u = (x - x0_) / (x1_ - x0_);
+  rec.v = (z - z0_) / (z1_ - z0_);
+  rec.t = t;
+  rec.mat_ptr = mat_ptr_;
+  rec.point = r.point_at_parameter(t);
+  rec.normal = vec3(0, 1, 0);
+  return true;
+}
+
+bool yz_rect::bounding_box(float t0, float t1, AABB &box) const {
+  box = AABB(vec3(k_ - 0.0001, y0_, z0_), vec3(k_ + 0.0001, y1_, z1_));
+  return true;
+}
+
+bool yz_rect::hit(const ray &r, float t_min, float t_max,
+                  hit_record &rec) const {
+  float t = (k_ - r.origin().x()) / r.direction().x();
+  if (t > t_max || t < t_min)
+    return false;
+  float y = r.origin().y() + t * r.direction().y();
+  float z = r.origin().z() + t * r.direction().z();
+  if (y < y0_ || y > y1_ || z < z0_ || z > z1_)
+    return false;
+  rec.u = (y - y0_) / (y1_ - y0_);
+  rec.v = (z - z0_) / (z1_ - z0_);
+  rec.t = t;
+  rec.mat_ptr = mat_ptr_;
+  rec.point = r.point_at_parameter(t);
+  rec.normal = vec3(1, 0, 0);
+  return true;
+}
