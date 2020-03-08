@@ -13,6 +13,7 @@
 #include <sphere.h>
 #include <texture.h>
 #include <thread>
+#include <unordered_map>
 
 #ifdef __linux__
 #include <cstdlib> //std::system
@@ -32,6 +33,7 @@ int main(int argc, char **argv) {
   float time1 = 1.0f;
   int sample_max_recurse_depth = 50;
   float fov = 90.0f;
+  int bonus_pic = 10;
   // read value from config
   inipp::Ini<char> ini;
   ini.parse(config);
@@ -41,6 +43,7 @@ int main(int argc, char **argv) {
   inipp::extract(ini.sections["DEFAULT"]["recur_depth"],
                  sample_max_recurse_depth);
   inipp::extract(ini.sections["DEFAULT"]["fov"], fov);
+  inipp::extract(ini.sections["DEFAULT"]["fov"], bonus_pic);
 
   inipp::extract(ini.sections["BLUR"]["aperture"], aperture);
 
@@ -79,7 +82,9 @@ int main(int argc, char **argv) {
              aperture, dist_to_focus, time0, time1);
 
   std::mutex mutex_;
+  std::mutex mutex_2;
   std::map<int, std::vector<int>> result;
+  std::unordered_map<std::string, std::vector<vec3>> pixel_sample_cols;
   std::deque<std::thread> thread_vec;
   auto start = std::chrono::high_resolution_clock::now();
   for (int j = ny - 1; j >= 0; j--) {
@@ -93,13 +98,16 @@ int main(int argc, char **argv) {
         [&](int index) {
           thread_local std::vector<int> row_colors;
           for (int i = 0; i < nx; i++) {
+            std::vector<vec3> sample_cols;
             vec3 col = vec3(0.0, 0.0, 0.0);
             for (int k = 0; k < ns; k++) {
               float u = ((float)i + drand_r()) / (float)nx;
               float v = ((float)index + drand_r()) / (float)ny;
 
               ray r = cam.get_ray(u, v);
-              col += color(r, world, 0, sample_max_recurse_depth);
+              auto tmp = color(r, world, 0, sample_max_recurse_depth);
+              col += tmp;
+              sample_cols.push_back(tmp);
             }
             col /= float(ns);
             col = vec3(sqrt(col.r()), sqrt(col.g()), sqrt(col.b()));
@@ -109,6 +117,12 @@ int main(int argc, char **argv) {
             row_colors.push_back(red);
             row_colors.push_back(green);
             row_colors.push_back(blue);
+
+            {
+              std::lock_guard<std::mutex> lock(mutex_2);
+              auto key = std::to_string(i) + "+" + std::to_string(index);
+              pixel_sample_cols.insert({key, sample_cols});
+            }
           }
           {
             std::lock_guard<std::mutex> lock(mutex_);
@@ -132,6 +146,36 @@ int main(int argc, char **argv) {
     for (int k = 0; k < j.size(); k += 3) {
       ofs << valid_rgb(j.at(k)) << ' ' << valid_rgb(j.at(k + 1)) << ' '
           << valid_rgb(j.at(k + 2)) << ' ' << '\n';
+    }
+  }
+  std::cout << pixel_sample_cols.find("0+0")->second.size();
+  std::cout.flush();
+
+  int sample_vec_slice = ns / bonus_pic;
+  for (int k = 0; k < bonus_pic; k++) {
+    std::ofstream sample_ofs{"img_" + std::to_string(k) + ".ppm"};
+    sample_ofs << "P3\n" << nx << " " << ny << "\n255\n";
+    for (int j = ny - 1; j >= 0; j--) {
+      for (int i = 0; i < nx; i++) {
+
+        auto key = std::to_string(i) + "+" + std::to_string(j);
+        std::vector<vec3> sample_vec = pixel_sample_cols.find(key)->second;
+        std::vector<vec3> target_vec{sample_vec.cbegin(),
+                                     sample_vec.cbegin() +
+                                         sample_vec_slice * (k + 1)};
+
+        vec3 col{0, 0, 0};
+        for (const auto &it : target_vec) {
+          col += it;
+        }
+        col /= float(sample_vec_slice * (k + 1));
+        col = vec3(sqrt(col.r()), sqrt(col.g()), sqrt(col.b()));
+        int red = int(255.99f * col.r());
+        int green = int(255.99f * col.g());
+        int blue = int(255.99f * col.b());
+        sample_ofs << valid_rgb(red) << ' ' << valid_rgb(green) << ' '
+                   << valid_rgb(blue) << ' ';
+      }
     }
   }
   auto end = std::chrono::high_resolution_clock::now();
