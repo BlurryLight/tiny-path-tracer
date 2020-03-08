@@ -33,6 +33,7 @@ int main(int argc, char **argv) {
   float time1 = 1.0f;
   int sample_max_recurse_depth = 50;
   float fov = 90.0f;
+  int allow_bonus_pic = 0;
   int bonus_pic = 10;
   // read value from config
   inipp::Ini<char> ini;
@@ -43,7 +44,8 @@ int main(int argc, char **argv) {
   inipp::extract(ini.sections["DEFAULT"]["recur_depth"],
                  sample_max_recurse_depth);
   inipp::extract(ini.sections["DEFAULT"]["fov"], fov);
-  inipp::extract(ini.sections["DEFAULT"]["fov"], bonus_pic);
+  inipp::extract(ini.sections["DEFAULT"]["bonus_pic"], bonus_pic);
+  inipp::extract(ini.sections["DEFAULT"]["allow_bonus_pic"], allow_bonus_pic);
 
   inipp::extract(ini.sections["BLUR"]["aperture"], aperture);
 
@@ -148,33 +150,33 @@ int main(int argc, char **argv) {
           << valid_rgb(j.at(k + 2)) << ' ' << '\n';
     }
   }
-  std::cout << pixel_sample_cols.find("0+0")->second.size();
-  std::cout.flush();
 
-  int sample_vec_slice = ns / bonus_pic;
-  for (int k = 0; k < bonus_pic; k++) {
-    std::ofstream sample_ofs{"img_" + std::to_string(k) + ".ppm"};
-    sample_ofs << "P3\n" << nx << " " << ny << "\n255\n";
-    for (int j = ny - 1; j >= 0; j--) {
-      for (int i = 0; i < nx; i++) {
+  if (allow_bonus_pic) {
+    int sample_vec_slice = ns / bonus_pic;
+    for (int k = 0; k < bonus_pic; k++) {
+      std::ofstream sample_ofs{"img_" + std::to_string(k) + ".ppm"};
+      sample_ofs << "P3\n" << nx << " " << ny << "\n255\n";
+      for (int j = ny - 1; j >= 0; j--) {
+        for (int i = 0; i < nx; i++) {
 
-        auto key = std::to_string(i) + "+" + std::to_string(j);
-        std::vector<vec3> sample_vec = pixel_sample_cols.find(key)->second;
-        std::vector<vec3> target_vec{sample_vec.cbegin(),
-                                     sample_vec.cbegin() +
-                                         sample_vec_slice * (k + 1)};
+          auto key = std::to_string(i) + "+" + std::to_string(j);
+          std::vector<vec3> sample_vec = pixel_sample_cols.find(key)->second;
+          std::vector<vec3> target_vec{sample_vec.cbegin(),
+                                       sample_vec.cbegin() +
+                                           sample_vec_slice * (k + 1)};
 
-        vec3 col{0, 0, 0};
-        for (const auto &it : target_vec) {
-          col += it;
+          vec3 col{0, 0, 0};
+          for (const auto &it : target_vec) {
+            col += it;
+          }
+          col /= float(sample_vec_slice * (k + 1));
+          col = vec3(sqrt(col.r()), sqrt(col.g()), sqrt(col.b()));
+          int red = int(255.99f * col.r());
+          int green = int(255.99f * col.g());
+          int blue = int(255.99f * col.b());
+          sample_ofs << valid_rgb(red) << ' ' << valid_rgb(green) << ' '
+                     << valid_rgb(blue) << ' ';
         }
-        col /= float(sample_vec_slice * (k + 1));
-        col = vec3(sqrt(col.r()), sqrt(col.g()), sqrt(col.b()));
-        int red = int(255.99f * col.r());
-        int green = int(255.99f * col.g());
-        int blue = int(255.99f * col.b());
-        sample_ofs << valid_rgb(red) << ' ' << valid_rgb(green) << ' '
-                   << valid_rgb(blue) << ' ';
       }
     }
   }
