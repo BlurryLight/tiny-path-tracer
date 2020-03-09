@@ -241,16 +241,73 @@ box::box(vec3 pmin, vec3 pmax, material *mat) {
   // xz group
   list[2] = new xz_rect(pmin.x(), pmax.x(), pmin.z(), pmax.z(), pmax.y(), mat);
   list[3] = new flip_normal(
-      new xy_rect(pmin.x(), pmax.x(), pmin.z(), pmax.z(), pmin.y(), mat));
+      new xz_rect(pmin.x(), pmax.x(), pmin.z(), pmax.z(), pmin.y(), mat));
 
   // yz group
   list[4] = new yz_rect(pmin.y(), pmax.y(), pmin.z(), pmax.z(), pmax.x(), mat);
   list[5] = new flip_normal(
-      new xy_rect(pmin.y(), pmax.y(), pmin.z(), pmax.z(), pmin.x(), mat));
+      new yz_rect(pmin.y(), pmax.y(), pmin.z(), pmax.z(), pmin.x(), mat));
 
   this->list_ptr_ = new hitable_list(list, 6);
 }
 
 bool box::hit(const ray &r, float t_min, float t_max, hit_record &rec) const {
   return list_ptr_->hit(r, t_min, t_max, rec);
+}
+
+rotate_y::rotate_y(hitable *p, float angle) : ptr_(p) {
+  float radians = angle / 180.0f * M_PI;
+  sin_theta_ = std::sin(radians);
+  cos_theta_ = std::cos(radians);
+  has_box_ = ptr_->bounding_box(0, 0, box_); // don't support moving-shpere
+  auto fmax = std::numeric_limits<float>::max();
+  vec3 min(fmax, fmax, fmax);
+  vec3 max(-fmax, -fmax, -fmax);
+  // find new bbox(new vec3 min . vec3 max)
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < 2; j++) {
+
+      for (int k = 0; k < 2; k++) {
+        float x = i * box_.max().x() + (1 - i) * box_.min().x();
+        float y = j * box_.max().y() + (1 - j) * box_.min().y();
+        float z = k * box_.max().z() + (1 - k) * box_.min().z();
+        float new_x = cos_theta_ * x + sin_theta_ * z;
+        float new_z = -sin_theta_ * x + cos_theta_ * z;
+        vec3 tester(new_x, y, new_z);
+        for (int m = 0; m < 3; m++) {
+          if (tester[m] > max[m])
+            max[m] = tester[m];
+          if (tester[m] < min[m])
+            min[m] = tester[m];
+        }
+      }
+    }
+  }
+  box_ = AABB(min, max);
+}
+
+bool rotate_y::hit(const ray &r, float t_min, float t_max,
+                   hit_record &rec) const {
+  vec3 origin = r.origin();
+  vec3 direction = r.direction();
+  origin[0] = cos_theta_ * r.origin()[0] - sin_theta_ * r.origin()[2];
+  origin[2] = sin_theta_ * r.origin()[0] + cos_theta_ * r.origin()[2];
+
+  direction[0] = cos_theta_ * r.direction()[0] - sin_theta_ * r.direction()[2];
+  direction[2] = sin_theta_ * r.direction()[0] + cos_theta_ * r.direction()[2];
+  ray rotated_r(origin, direction, r.time());
+  if (ptr_->hit(rotated_r, t_min, t_max, rec)) {
+    vec3 p = rec.point;
+    vec3 normal = rec.normal; // if scale, the normal will has a more
+                              // complicated computation
+    p[0] = cos_theta_ * rec.point[0] + sin_theta_ * rec.point[2];
+    p[2] = -sin_theta_ * rec.point[0] + cos_theta_ * rec.point[2];
+
+    normal[0] = cos_theta_ * rec.normal[0] + sin_theta_ * rec.normal[2];
+    normal[2] = -sin_theta_ * rec.normal[0] + cos_theta_ * rec.normal[2];
+    rec.point = p;
+    rec.normal = normal;
+    return true;
+  }
+  return false;
 }

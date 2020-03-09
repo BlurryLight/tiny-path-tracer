@@ -163,4 +163,45 @@ public:
   hitable *list_ptr_;
 };
 
+class translate : public hitable {
+public:
+  translate(hitable *p, const vec3 &offset) : ptr_(p), offset_(offset) {}
+  virtual bool bounding_box(float t0, float t1, AABB &box) const override {
+    if (ptr_->bounding_box(t0, t1, box)) {
+      box = AABB(box.min() + offset_, box.max() + offset_);
+      return true;
+    }
+    return false;
+  }
+  virtual bool hit(const ray &r, float t_min, float t_max,
+                   hit_record &rec) const override {
+    ray moved_r(r.origin() - offset_, r.direction(), r.time());
+    if (ptr_->hit(moved_r, t_min, t_max, rec)) {
+      rec.point += offset_;
+      return true;
+    }
+    return false;
+  }
+
+  hitable *ptr_;
+  vec3 offset_;
+};
+
+class rotate_y : public hitable {
+public:
+  rotate_y(hitable *p, float angle);
+  virtual bool bounding_box(float t0, float t1, AABB &box) const override {
+    box = box_;
+    return has_box_;
+  }
+  virtual bool hit(const ray &r, float t_min, float t_max,
+                   hit_record &rec) const override;
+
+  hitable *ptr_;
+  float sin_theta_;
+  float cos_theta_;
+  bool has_box_;
+  AABB box_;
+};
+
 #endif // HITABLE_H
