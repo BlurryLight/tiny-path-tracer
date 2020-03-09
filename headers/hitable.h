@@ -148,4 +148,19 @@ public:
   hitable *ptr_;
 };
 
+class box : public hitable {
+public:
+  box() {}
+  box(vec3 pmin, vec3 pmax, material *mat);
+  virtual bool hit(const ray &r, float t_min, float t_max,
+                   hit_record &rec) const override;
+  virtual bool bounding_box(float t0, float t1, AABB &box) const override {
+    box = AABB(point_min_, point_max_);
+    return true;
+  }
+
+  vec3 point_min_, point_max_;
+  hitable *list_ptr_;
+};
+
 #endif // HITABLE_H

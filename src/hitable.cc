@@ -2,6 +2,7 @@
 #include "aabb.h"
 #include "utils.h"
 #include <array>
+#include <hitable_list.h>
 
 bool lambertian::scatter(const ray &r_in, const hit_record &rec,
                          vec3 &attenuation, ray &scattered) const {
@@ -224,4 +225,32 @@ bool yz_rect::hit(const ray &r, float t_min, float t_max,
   rec.point = r.point_at_parameter(t);
   rec.normal = vec3(1, 0, 0);
   return true;
+}
+
+box::box(vec3 pmin, vec3 pmax, material *mat) {
+  point_min_ = pmin;
+  point_max_ = pmax;
+  hitable **list = new hitable *[6];
+  // normals outword from the box
+
+  // xy group
+  list[0] = new xy_rect(pmin.x(), pmax.x(), pmin.y(), pmax.y(), pmax.z(), mat);
+  list[1] = new flip_normal(
+      new xy_rect(pmin.x(), pmax.x(), pmin.y(), pmax.y(), pmin.z(), mat));
+
+  // xz group
+  list[2] = new xz_rect(pmin.x(), pmax.x(), pmin.z(), pmax.z(), pmax.y(), mat);
+  list[3] = new flip_normal(
+      new xy_rect(pmin.x(), pmax.x(), pmin.z(), pmax.z(), pmin.y(), mat));
+
+  // yz group
+  list[4] = new yz_rect(pmin.y(), pmax.y(), pmin.z(), pmax.z(), pmax.x(), mat);
+  list[5] = new flip_normal(
+      new xy_rect(pmin.y(), pmax.y(), pmin.z(), pmax.z(), pmin.x(), mat));
+
+  this->list_ptr_ = new hitable_list(list, 6);
+}
+
+bool box::hit(const ray &r, float t_min, float t_max, hit_record &rec) const {
+  return list_ptr_->hit(r, t_min, t_max, rec);
 }

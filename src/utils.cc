@@ -272,7 +272,7 @@ hitable *cornell_box() {
       new lambertian(new constant_texture(vec3(0.73, 0.73, 0.73)));
   material *green =
       new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15)));
-  material *light = new diffuse_light(new constant_texture(vec3(20, 20, 20)));
+  material *light = new diffuse_light(new constant_texture(vec3(15, 15, 15)));
 
   list[i++] =
       new flip_normal(new yz_rect(-300, 300, -300, 300, -300, green)); // left
@@ -281,8 +281,11 @@ hitable *cornell_box() {
   list[i++] =
       new flip_normal(new xz_rect(-300, 300, -300, 300, 300, white)); // top
   list[i++] = new xy_rect(-300, 300, -300, 300, -300, white);
-  list[i++] = new xz_rect(-150, 150, -150, 150, 290, light);
-  list[i++] = new sphere(vec3(-100, -200, -100), 100, new dielectric(1.5));
+  list[i++] = new xz_rect(-50, 50, -50, 50, 298, light);
+  list[i++] =
+      new box(vec3(-150, -300, -50), vec3(0, 50, 0), white); // rectangle
+  list[i++] =
+      new box(vec3(-30, -300, -50), vec3(180, -100, 150), white); // square
 
   //  return new hitable_list(list, i);
   return new bvh_node(list, i, 0, 0);
