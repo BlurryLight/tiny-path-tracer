@@ -20,8 +20,9 @@
 #endif
 
 int main(int argc, char **argv) {
-  std::string filename{"img.ppm"};
-  std::ofstream ofs(filename, std::ios::out);
+  std::vector<std::string> fileanmes;
+  fileanmes.push_back("img.ppm");
+  std::ofstream ofs(fileanmes.at(0), std::ios::out);
 
   std::ifstream config("config.ini");
   // default value
@@ -91,25 +92,38 @@ int main(int argc, char **argv) {
   auto start = std::chrono::high_resolution_clock::now();
   for (int j = ny - 1; j >= 0; j--) {
     // naive thread pool
-    //        if (thread_vec.size() >= 8) {
-    //          std::for_each(thread_vec.begin(), thread_vec.end(),
-    //                        [](std::thread &t) { t.join(); });
-    //          thread_vec.clear();
-    //        }
+    if (thread_vec.size() >= std::thread::hardware_concurrency()) {
+      std::for_each(thread_vec.begin(), thread_vec.end(),
+                    [](std::thread &t) { t.join(); });
+      thread_vec.clear();
+    }
     thread_vec.emplace_back(
         [&](int index) {
           thread_local std::vector<int> row_colors;
+
+          int sample_vec_slice = ns;
+          if (allow_bonus_pic) {
+            sample_vec_slice = ns / bonus_pic;
+          }
           for (int i = 0; i < nx; i++) {
             std::vector<vec3> sample_cols;
             vec3 col = vec3(0.0, 0.0, 0.0);
+            int count = 0;
             for (int k = 0; k < ns; k++) {
+              ++count;
               float u = ((float)i + drand_r()) / (float)nx;
               float v = ((float)index + drand_r()) / (float)ny;
 
               ray r = cam.get_ray(u, v);
               auto tmp = color(r, world, 0, sample_max_recurse_depth);
               col += tmp;
-              sample_cols.push_back(tmp);
+              if (count % sample_vec_slice == 0) {
+                // record processing data
+                // eg: eg = 100, bonus_pic = 4, then slice = 25
+                // when sample num reaches 25,50,75,100,vec will record the
+                // colors
+                sample_cols.push_back(col);
+              }
             }
             col /= float(ns);
             col = vec3(sqrt(col.r()), sqrt(col.g()), sqrt(col.b()));
@@ -154,21 +168,17 @@ int main(int argc, char **argv) {
   if (allow_bonus_pic) {
     int sample_vec_slice = ns / bonus_pic;
     for (int k = 0; k < bonus_pic; k++) {
-      std::ofstream sample_ofs{"img_" + std::to_string(k) + ".ppm"};
+      std::string file = "img_" + std::to_string(k) + ".ppm";
+      fileanmes.push_back(file);
+      std::ofstream sample_ofs{file};
       sample_ofs << "P3\n" << nx << " " << ny << "\n255\n";
       for (int j = ny - 1; j >= 0; j--) {
         for (int i = 0; i < nx; i++) {
 
           auto key = std::to_string(i) + "+" + std::to_string(j);
           std::vector<vec3> sample_vec = pixel_sample_cols.find(key)->second;
-          std::vector<vec3> target_vec{sample_vec.cbegin(),
-                                       sample_vec.cbegin() +
-                                           sample_vec_slice * (k + 1)};
+          vec3 col = sample_vec.at(k);
 
-          vec3 col{0, 0, 0};
-          for (const auto &it : target_vec) {
-            col += it;
-          }
           col /= float(sample_vec_slice * (k + 1));
           col = vec3(sqrt(col.r()), sqrt(col.g()), sqrt(col.b()));
           int red = int(255.99f * col.r());
@@ -186,14 +196,22 @@ int main(int argc, char **argv) {
   std::cout << "time: "
             << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() /1000.0f
             << " s" << std::endl;
+
+  // clang-format on
 #ifdef __linux__
   // convert ppm to jpg
   // need imagemagick & Linux
   ofs.flush();
-  std::string command = "convert " + filename + " " +
-                        filename.substr(0, filename.find_first_of('.')) +
-                        ".jpg";
-  std::system(command.c_str());
+  for (auto filename : fileanmes) {
+    std::string command = "convert " + filename + " " +
+                          filename.substr(0, filename.find_first_of('.')) +
+                          ".jpg";
+
+    int ret = std::system(command.c_str());
+    if (ret == -1) {
+      perror("os.system error");
+    }
+  }
 #endif
   return 0;
 }
