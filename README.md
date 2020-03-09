@@ -27,3 +27,9 @@ ALL HONOR BELONGS TO Peter Shirley.
 - [x] sphere uv mapping
 
 ![earth](image/5.jpg)
+
+- [x] cornel box(没有用Monte-Carlo,噪点有点严重)
+
+![box1](image/6.jpg)
+
+![box2](image/7.jpg)
