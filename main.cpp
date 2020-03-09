@@ -20,9 +20,9 @@
 #endif
 
 int main(int argc, char **argv) {
-  std::vector<std::string> fileanmes;
-  fileanmes.push_back("img.ppm");
-  std::ofstream ofs(fileanmes.at(0), std::ios::out);
+  std::vector<std::string> filenames;
+  filenames.push_back("img.ppm");
+  std::ofstream ofs(filenames.at(0), std::ios::out);
 
   std::ifstream config("config.ini");
   // default value
@@ -169,7 +169,7 @@ int main(int argc, char **argv) {
     int sample_vec_slice = ns / bonus_pic;
     for (int k = 0; k < bonus_pic; k++) {
       std::string file = "img_" + std::to_string(k) + ".ppm";
-      fileanmes.push_back(file);
+      filenames.push_back(file);
       std::ofstream sample_ofs{file};
       sample_ofs << "P3\n" << nx << " " << ny << "\n255\n";
       for (int j = ny - 1; j >= 0; j--) {
@@ -202,16 +202,22 @@ int main(int argc, char **argv) {
   // convert ppm to jpg
   // need imagemagick & Linux
   ofs.flush();
-  for (auto filename : fileanmes) {
-    std::string command = "convert " + filename + " " +
-                          filename.substr(0, filename.find_first_of('.')) +
-                          ".jpg";
-
-    int ret = std::system(command.c_str());
-    if (ret == -1) {
-      perror("os.system error");
-    }
+  std::string file_list;
+  for (auto filename : filenames) {
+    file_list += filename;
+    file_list += " ";
   }
+  std::string command =
+      "convert " + file_list + " " + "+append" + " " +
+      filenames.at(0).substr(0, filenames.at(0).find_first_of(".")) + ".jpg";
+  std::cout << "Merging pics:"
+            << "\n";
+  std::cout << command << std::endl;
+  int ret = std::system(command.c_str());
+  if (ret == -1) {
+    perror("os.system error");
+  }
+
 #endif
   return 0;
 }
