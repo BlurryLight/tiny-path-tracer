@@ -89,21 +89,21 @@ int main(int argc, char **argv) {
   std::map<int, std::vector<int>> result;
   std::unordered_map<std::string, std::vector<vec3>> pixel_sample_cols;
   std::deque<std::thread> thread_vec;
-  auto start = std::chrono::high_resolution_clock::now();
 
-  bool first_thread = false; // for estimate time
+  std::condition_variable thread_end;
+  int thread_end_count = 0;
+  auto start = std::chrono::high_resolution_clock::now();
   for (int j = ny - 1; j >= 0; j--) {
     // naive thread pool
-    if (thread_vec.size() >= std::thread::hardware_concurrency()) {
+    //    if (thread_vec.size() >= std::thread::hardware_concurrency()) {
 
-      std::for_each(thread_vec.begin(), thread_vec.end(),
-                    [](std::thread &t) { t.join(); });
-      thread_vec.clear();
-    }
+    //      std::for_each(thread_vec.begin(), thread_vec.end(),
+    //                    [](std::thread &t) { t.join(); });
+    //      thread_vec.clear();
+    //    }
     thread_vec.emplace_back(
         [&](int index) {
           thread_local std::vector<int> row_colors;
-          auto thread_start = std::chrono::high_resolution_clock::now();
           int sample_vec_slice = ns;
           if (allow_bonus_pic) {
             sample_vec_slice = ns / bonus_pic;
@@ -146,21 +146,27 @@ int main(int argc, char **argv) {
           {
             std::lock_guard<std::mutex> lock(mutex_);
             result.insert({index, row_colors});
-            auto thread_end = std::chrono::high_resolution_clock::now();
-            if (!first_thread) {
-              first_thread = true;
-              std::cout
-                  << "estimate_time: "
-                  << std::chrono::duration_cast<std::chrono::milliseconds>(
-                         thread_end - thread_start)
-                             .count() /
-                         1000.0f *
-                         (float(ny) / std::thread::hardware_concurrency())
-                  << " s" << std::endl;
-            }
+            thread_end_count++;
           }
+
+          thread_end.notify_one();
         },
         j);
+  }
+  {
+    // RAII
+    std::unique_lock<std::mutex> lock(mutex_);
+    int cores = std::thread::hardware_concurrency();
+    thread_end.wait(lock, [&] { return thread_end_count == cores; });
+    auto thread_end = std::chrono::high_resolution_clock::now();
+
+    auto batch_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+                          thread_end - start)
+                          .count() /
+                      1000.0f;
+    auto batch_num = ny / (std::thread::hardware_concurrency());
+    std::cout << "estimate time: " << batch_num * batch_time << " s"
+              << std::endl;
   }
   for (auto &i : thread_vec) {
     i.join();
