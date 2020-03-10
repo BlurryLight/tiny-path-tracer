@@ -204,4 +204,32 @@ public:
   AABB box_;
 };
 
+class isotropic : public material {
+public:
+  isotropic(texture *texture) : albedo_(texture) {}
+  virtual bool scatter(const ray &r_in, const hit_record &rec,
+                       vec3 &attenuation, ray &scattered) const override {
+    scattered = ray(rec.point, random_in_unit_sphere());
+    attenuation = albedo_->value(rec.u, rec.v, rec.point);
+    return true;
+  }
+  texture *albedo_;
+};
+
+class constant_medium : public hitable {
+public:
+  constant_medium(hitable *boundary, float density, texture *texture)
+      : boundary_(boundary), density_(density) {
+    phase_funcion_ = new isotropic(texture);
+  }
+  virtual bool hit(const ray &r, float t_min, float t_max,
+                   hit_record &rec) const override;
+  virtual bool bounding_box(float t0, float t1, AABB &box) const override {
+    return boundary_->bounding_box(t0, t1, box);
+  }
+  hitable *boundary_;
+  float density_;
+  material *phase_funcion_;
+};
+
 #endif // HITABLE_H

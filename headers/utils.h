@@ -29,6 +29,7 @@ hitable *two_perlin_spheres();
 
 hitable *sphere_cornell_box();
 hitable *cornell_box();
+hitable *cornell_box_smoke();
 
 class perlin_noise {
 public:

@@ -265,7 +265,7 @@ hitable *sphere_cornell_box() {
 }
 
 hitable *cornell_box() {
-  hitable **list = new hitable *[6];
+  hitable **list = new hitable *[100];
   int i = 0;
   material *red = new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05)));
   material *white =
@@ -294,4 +294,42 @@ hitable *cornell_box() {
 
   //  return new hitable_list(list, i);
   return new bvh_node(list, i, 0, 0);
+}
+
+hitable *cornell_box_smoke() {
+  hitable **list = new hitable *[100];
+  int i = 0;
+  material *red = new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05)));
+  material *white =
+      new lambertian(new constant_texture(vec3(0.73, 0.73, 0.73)));
+  material *green =
+      new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15)));
+  material *light = new diffuse_light(new constant_texture(vec3(20, 20, 20)));
+
+  list[i++] =
+      new flip_normal(new yz_rect(-300, 300, -300, 300, -300, green)); // left
+  list[i++] = new yz_rect(-300, 300, -300, 300, 300, red);             // right
+  list[i++] = new xz_rect(-300, 300, -300, 300, -300, white);          // bottom
+  list[i++] =
+      new flip_normal(new xz_rect(-300, 300, -300, 300, 300, white)); // top
+  list[i++] = new xy_rect(-300, 300, -300, 300, -300, white);
+  list[i++] = new xz_rect(-100, 100, -150, -50, 298, light);
+
+  vec3 rect_box_corner = vec3(-200, -300, -100);
+  auto rec_box = new translate(
+      new rotate_y(new box(vec3(0, 0, 0), vec3(200, 350, 75), white), 45.0f),
+      rect_box_corner); // rectangle
+  vec3 square_box_corner = vec3(30, -300, -50);
+  auto square_box = new translate(
+      new rotate_y(new box(vec3(0, 0, 0), vec3(180, 180, 180), white), -15.0f),
+      square_box_corner); // square
+  list[i++] = new constant_medium(rec_box, 0.05,
+                                  new constant_texture(vec3(1.0, 1.0, 1.0)));
+  list[i++] = new constant_medium(square_box, 0.01,
+                                  new constant_texture(vec3(0.1, 0.0, 0.0)));
+  hitable *mist = new sphere(vec3(0, 0, 0), 1000, new dielectric(1.5));
+  list[i++] = new constant_medium(mist, 0.0001,
+                                  new constant_texture(vec3(1.0, 1.0, 1.0)));
+
+  return new hitable_list(list, i);
 }

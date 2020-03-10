@@ -1,5 +1,7 @@
 #include "camera.h"
 #include "ray.h"
+#include "sphere.h"
+#include "texture.h"
 #include "third_party/inipp.h"
 #include "vec3.h"
 #include <algorithm>
@@ -10,8 +12,6 @@
 #include <iostream>
 #include <map>
 #include <mutex>
-#include <sphere.h>
-#include <texture.h>
 #include <thread>
 #include <unordered_map>
 
@@ -64,8 +64,9 @@ int main(int argc, char **argv) {
   std::cout << "<===========>" << std::endl;
   ofs << "P3\n" << nx << " " << ny << "\n255\n";
 
+  hitable *world = cornell_box_smoke();
   //  hitable *world = sphere_cornell_box();
-  hitable *world = cornell_box();
+  //  hitable *world = cornell_box();
   //  hitable *world = random_scene();
   //  hitable *world = light_spheres();
   //  hitable *world = two_perlin_spheres();
@@ -91,16 +92,8 @@ int main(int argc, char **argv) {
   std::deque<std::thread> thread_vec;
 
   std::condition_variable thread_end;
-  int thread_end_count = 0;
   auto start = std::chrono::high_resolution_clock::now();
   for (int j = ny - 1; j >= 0; j--) {
-    // naive thread pool
-    //    if (thread_vec.size() >= std::thread::hardware_concurrency()) {
-
-    //      std::for_each(thread_vec.begin(), thread_vec.end(),
-    //                    [](std::thread &t) { t.join(); });
-    //      thread_vec.clear();
-    //    }
     thread_vec.emplace_back(
         [&](int index) {
           thread_local std::vector<int> row_colors;
@@ -146,7 +139,6 @@ int main(int argc, char **argv) {
           {
             std::lock_guard<std::mutex> lock(mutex_);
             result.insert({index, row_colors});
-            thread_end_count++;
           }
 
           thread_end.notify_one();
@@ -157,16 +149,15 @@ int main(int argc, char **argv) {
     // RAII
     std::unique_lock<std::mutex> lock(mutex_);
     int cores = std::thread::hardware_concurrency();
-    thread_end.wait(lock, [&] { return thread_end_count == cores; });
+    thread_end.wait(lock);
     auto thread_end = std::chrono::high_resolution_clock::now();
 
-    auto batch_time = std::chrono::duration_cast<std::chrono::milliseconds>(
-                          thread_end - start)
-                          .count() /
-                      1000.0f;
-    auto batch_num = ny / (std::thread::hardware_concurrency());
-    std::cout << "estimate time: " << batch_num * batch_time << " s"
-              << std::endl;
+    auto thread_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+                           thread_end - start)
+                           .count() /
+                       1000.0f;
+    float scale = 1.5f; // magic number
+    std::cout << "estimate time: " << thread_time * scale << " s" << std::endl;
   }
   for (auto &i : thread_vec) {
     i.join();

@@ -311,3 +311,32 @@ bool rotate_y::hit(const ray &r, float t_min, float t_max,
   }
   return false;
 }
+
+bool constant_medium::hit(const ray &r, float t_min, float t_max,
+                          hit_record &rec) const {
+
+  hit_record rec1, rec2;
+  if (boundary_->hit(r, -MAXFLOAT, MAXFLOAT, rec1)) //可能从内向外命中
+  {
+    if (boundary_->hit(r, rec1.t + 0.0001, MAXFLOAT, rec2)) {
+      if (rec1.t < t_min)
+        rec1.t = t_min;
+      if (rec2.t > t_max)
+        rec2.t = t_max;
+      if (rec1.t >= rec2.t)
+        return false;
+      float distance_inside_boundary =
+          (rec2.t - rec1.t) * r.direction().length();
+      float hit_distance = (-1 / density_) * std::log(drand_r());
+      if (hit_distance < distance_inside_boundary) {
+        rec.t = rec1.t + hit_distance / r.direction().length();
+        rec.point = r.point_at_parameter(rec.t);
+        rec.normal = vec3(drand_r(), drand_r(), drand_r()); // arbirary vector
+        rec.normal.normalize();
+        rec.mat_ptr = phase_funcion_;
+        return true;
+      }
+    }
+  }
+  return false;
+}
