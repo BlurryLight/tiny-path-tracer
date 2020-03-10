@@ -3,7 +3,7 @@
 #include "utils.h"
 #include "vec3.h"
 #include <iostream>
-
+#include <perlin_noise.h>
 struct perlin_noise;
 
 class texture {

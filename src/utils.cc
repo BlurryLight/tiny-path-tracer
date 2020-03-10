@@ -1,7 +1,10 @@
 #include "utils.h"
 #include "hitable.h"
 #include "hitable_list.h"
+#include "material.h"
+#include "perlin_noise.h"
 #include "ray.h"
+#include "rect_box.h"
 #include <random>
 #include <sphere.h>
 #define STB_IMAGE_IMPLEMENTATION
