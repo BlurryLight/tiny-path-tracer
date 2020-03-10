@@ -61,6 +61,8 @@ int main(int argc, char **argv) {
 #else
   std::cout << "IN RELEASE MODE" << std::endl;
 #endif
+  std::cout << "Threads num: " << std::thread::hardware_concurrency()
+            << std::endl;
   std::cout << "<===========>" << std::endl;
   ofs << "P3\n" << nx << " " << ny << "\n255\n";
 

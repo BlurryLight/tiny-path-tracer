@@ -3,6 +3,7 @@
 #include "utils.h"
 #include <array>
 #include <hitable_list.h>
+#include <limits>
 
 bool lambertian::scatter(const ray &r_in, const hit_record &rec,
                          vec3 &attenuation, ray &scattered) const {
@@ -316,9 +317,12 @@ bool constant_medium::hit(const ray &r, float t_min, float t_max,
                           hit_record &rec) const {
 
   hit_record rec1, rec2;
-  if (boundary_->hit(r, -MAXFLOAT, MAXFLOAT, rec1)) //可能从内向外命中
+  if (boundary_->hit(r, std::numeric_limits<float>::lowest(),
+                     std::numeric_limits<float>::max(),
+                     rec1)) //可能从内向外命中
   {
-    if (boundary_->hit(r, rec1.t + 0.0001, MAXFLOAT, rec2)) {
+    if (boundary_->hit(r, rec1.t + 0.0001, std::numeric_limits<float>::max(),
+                       rec2)) {
       if (rec1.t < t_min)
         rec1.t = t_min;
       if (rec2.t > t_max)

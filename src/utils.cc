@@ -53,7 +53,7 @@ vec3 reflect(const vec3 &v, const vec3 &n) // vecin and normal
 
 vec3 color(const ray &r, hitable *world, int depth, int max_depth) {
   hit_record rec;
-  if (world->hit(r, 0.001, MAXFLOAT, rec)) {
+  if (world->hit(r, 0.001, std::numeric_limits<float>::max(), rec)) {
     ray scattered;
     vec3 attenuation;
     vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.point);
