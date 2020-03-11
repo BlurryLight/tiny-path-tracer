@@ -30,6 +30,7 @@ hitable *two_perlin_spheres();
 hitable *sphere_cornell_box();
 hitable *cornell_box();
 hitable *cornell_box_smoke();
+hitable *oneweek_final();
 
 inline void get_uv_map(const vec3 &p, float &u, float &v) {
   u = std::atan2(p.z(), p.x()) / (2 * M_PI);
