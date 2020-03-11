@@ -1,11 +1,20 @@
 #include "material.h"
 #include "hitable.h"
 bool lambertian::scatter(const ray &r_in, const hit_record &rec,
-                         vec3 &attenuation, ray &scattered) const {
+                         vec3 &attenuation, ray &scattered, float &pdf) const {
   vec3 target = rec.point + random_in_unit_sphere();
   scattered = ray(rec.point, target - rec.point, r_in.time());
   attenuation = albedo_->value(rec.u, rec.v, rec.point);
+  pdf = 0.5f / M_PI;
   return true;
+}
+
+float lambertian::scattering_pdf(const ray &r_in, const hit_record &rec,
+                                 const ray &scattered) const {
+  float cosine = dot(rec.normal, unit_vector(scattered.direction()));
+  if (cosine < 0)
+    return 0;
+  return cosine / M_PI;
 }
 
 bool metal::scatter(const ray &r_in, const hit_record &rec, vec3 &attenuation,

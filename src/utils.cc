@@ -59,18 +59,23 @@ vec3 color(const ray &r, hitable *world, int depth, int max_depth) {
   if (world->hit(r, 0.001, std::numeric_limits<float>::max(), rec)) {
     ray scattered;
     vec3 attenuation;
+    // attenuation = albedo
     vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.point);
+    float pdf;
     if (depth < max_depth &&
-        rec.mat_ptr->scatter(r, rec, attenuation, scattered)) {
-      return emitted +
-             attenuation * color(scattered, world, depth + 1, max_depth);
+        rec.mat_ptr->scatter(r, rec, attenuation, scattered, pdf)) {
+      return emitted + attenuation *
+                           rec.mat_ptr->scattering_pdf(r, rec, scattered) *
+                           color(scattered, world, depth + 1, max_depth) / pdf;
     } else {
       return emitted;
     }
   } else {
-    vec3 unit_direction = unit_vector(r.direction());
-    float t = (unit_direction.y() + 1.0) * 0.5; // clamp (-1,1) to (0,1)
-    return (0.1) * ((1 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0));
+    return vec3(0, 0, 0);
+    //    vec3 unit_direction = unit_vector(r.direction());
+    //    float t = (unit_direction.y() + 1.0) * 0.5; // clamp (-1,1) to (0,1)
+    //    return (0.1) * ((1 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5,
+    //    0.7, 1.0));
   }
   // linear interperation
   // blend white with blue
@@ -277,9 +282,9 @@ hitable *cornell_box() {
       new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15)));
   material *light = new diffuse_light(new constant_texture(vec3(20, 20, 20)));
 
+  list[i++] = new yz_rect(-300, 300, -300, 300, -300, green); // left
   list[i++] =
-      new flip_normal(new yz_rect(-300, 300, -300, 300, -300, green)); // left
-  list[i++] = new yz_rect(-300, 300, -300, 300, 300, red);             // right
+      new flip_normal(new yz_rect(-300, 300, -300, 300, 300, red));    // right
   list[i++] = new xz_rect(-300, 300, -300, 300, -300, white);          // bottom
   list[i++] =
       new flip_normal(new xz_rect(-300, 300, -300, 300, 300, white)); // top
@@ -309,9 +314,9 @@ hitable *cornell_box_smoke() {
       new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15)));
   material *light = new diffuse_light(new constant_texture(vec3(20, 20, 20)));
 
+  list[i++] = new yz_rect(-300, 300, -300, 300, -300, green); // left
   list[i++] =
-      new flip_normal(new yz_rect(-300, 300, -300, 300, -300, green)); // left
-  list[i++] = new yz_rect(-300, 300, -300, 300, 300, red);             // right
+      new flip_normal(new yz_rect(-300, 300, -300, 300, 300, red));    // right
   list[i++] = new xz_rect(-300, 300, -300, 300, -300, white);          // bottom
   list[i++] =
       new flip_normal(new xz_rect(-300, 300, -300, 300, 300, white)); // top
