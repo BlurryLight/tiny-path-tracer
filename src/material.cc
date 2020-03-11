@@ -84,3 +84,12 @@ bool isotropic::scatter(const ray &r_in, const hit_record &rec,
   attenuation = albedo_->value(rec.u, rec.v, rec.point);
   return true;
 }
+
+vec3 diffuse_light::emitted(const ray &r_in, const hit_record &rec, float u,
+                            float v, const vec3 &p) const {
+  if (dot(rec.normal, r_in.direction()) < 0)
+    return emit_->value(u, v, p);
+  else {
+    return vec3(0, 0, 0);
+  }
+}

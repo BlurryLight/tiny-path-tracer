@@ -60,10 +60,23 @@ vec3 color(const ray &r, hitable *world, int depth, int max_depth) {
     ray scattered;
     vec3 attenuation;
     // attenuation = albedo
-    vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.point);
+    vec3 emitted = rec.mat_ptr->emitted(r, rec, rec.u, rec.v, rec.point);
     float pdf;
     if (depth < max_depth &&
         rec.mat_ptr->scatter(r, rec, attenuation, scattered, pdf)) {
+
+      vec3 on_light = vec3(-100 + drand_r() * 200, 298, -150 + drand_r() * 100);
+      vec3 to_light = on_light - rec.point;
+      float distance_squared = to_light.squared_length();
+      to_light.make_unit_vector();
+      if (dot(to_light, rec.normal) < 0) // on light
+        return emitted;
+      float light_area = 200 * 200;
+      float light_cosine = std::abs(to_light.y());
+      if (light_cosine < 0.00001)
+        return emitted;
+      pdf = distance_squared / (light_cosine * light_area);
+      scattered = ray(rec.point, to_light, r.time());
       return emitted + attenuation *
                            rec.mat_ptr->scattering_pdf(r, rec, scattered) *
                            color(scattered, world, depth + 1, max_depth) / pdf;
@@ -289,7 +302,7 @@ hitable *cornell_box() {
   list[i++] =
       new flip_normal(new xz_rect(-300, 300, -300, 300, 300, white)); // top
   list[i++] = new xy_rect(-300, 300, -300, 300, -300, white);
-  list[i++] = new xz_rect(-100, 100, -150, -50, 298, light);
+  list[i++] = new flip_normal(new xz_rect(-100, 100, -150, -50, 298, light));
 
   vec3 rect_box_corner = vec3(-200, -300, -100);
   list[i++] = new translate(
@@ -321,7 +334,7 @@ hitable *cornell_box_smoke() {
   list[i++] =
       new flip_normal(new xz_rect(-300, 300, -300, 300, 300, white)); // top
   list[i++] = new xy_rect(-300, 300, -300, 300, -300, white);
-  list[i++] = new xz_rect(-100, 100, -150, -50, 298, light);
+  list[i++] = new flip_normal(new xz_rect(-100, 100, -150, -50, 298, light));
 
   vec3 rect_box_corner = vec3(-200, -300, -100);
   auto rec_box = new translate(
