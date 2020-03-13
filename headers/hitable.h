@@ -5,6 +5,7 @@
 #include "ray.h"
 #include "texture.h"
 #include <algorithm>
+#include <memory>
 // forward declaration
 class AABB;
 struct hit_record;
@@ -23,7 +24,7 @@ struct scatter_record {
   ray specular_ray;
   bool is_specular;
   vec3 attenuation;
-  pdf *pdf_ptr;
+  std::shared_ptr<pdf> pdf_ptr;
 };
 
 class hitable {

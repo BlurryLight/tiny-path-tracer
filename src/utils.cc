@@ -71,7 +71,7 @@ vec3 color(const ray &r, hitable *world, hitable *light_shape, int depth,
                                                max_depth);
       }
       hitable_pdf p0(light_shape, hit_rec.point);
-      mixture_pdf p(&p0, scatter_rec.pdf_ptr);
+      mixture_pdf p(&p0, scatter_rec.pdf_ptr.get());
       ray scattered = ray(hit_rec.point, p.generate(), r.time());
       float pdf_value = p.value(scattered.direction());
       return emitted +
@@ -306,12 +306,13 @@ hitable *cornell_box() {
   vec3 rect_box_corner = vec3(-200, -300, -100);
   material *aluminum = new metal(vec3(0.8, 0.85, 0.88), 0.0);
   list[i++] = new translate(
-      new rotate_y(new box(vec3(0, 0, 0), vec3(200, 350, 75), aluminum), 45.0f),
+      new rotate_y(new box(vec3(0, 0, 0), vec3(200, 350, 75), aluminum), 35.0f),
       rect_box_corner); // rectangle
   vec3 square_box_corner = vec3(30, -300, -50);
   list[i++] = new translate(
-      new rotate_y(new box(vec3(0, 0, 0), vec3(180, 180, 180), white), -15.0f),
+      new rotate_y(new box(vec3(0, 0, 0), vec3(180, 180, 180), white), -25.0f),
       square_box_corner); // square
+  list[i++] = new sphere(vec3(120, -50, 40), 70, new dielectric(1.5));
 
   //  return new hitable_list(list, i);
   return new bvh_node(list, i, 0, 0);

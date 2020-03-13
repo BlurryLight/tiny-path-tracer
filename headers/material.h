@@ -55,7 +55,7 @@ public:
   float ref_idx_;
   dielectric(float ri) : ref_idx_(ri) {}
   virtual bool scatter(const ray &r_in, const hit_record &rec,
-                       vec3 &attenuation, ray &scattered) const;
+                       scatter_record &scatter_rec) const override;
 };
 
 class diffuse_light : public material {

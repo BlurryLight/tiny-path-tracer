@@ -89,3 +89,32 @@ bool sphere::bounding_box(float t0, float t1, AABB &box) const {
              center_ + vec3(radius_, radius_, radius_));
   return true;
 }
+
+float sphere::pdf_value(const vec3 &origin, const vec3 &direction) const {
+  // go https://www.qiujiawei.com/solid-angle/
+  hit_record rec;
+  if (this->hit(ray(origin, direction), 0.001,
+                std::numeric_limits<float>::max(), rec)) {
+    float tmp = (radius_ * radius_) / (center_ - origin).squared_length();
+    float cosine_theta_max = sqrt(1 - tmp);
+    float solid_angle = 2 * M_PI * (1 - cosine_theta_max);
+    if (std::isnan(solid_angle))
+      return 0;
+    return 1 / solid_angle;
+  }
+  return 0;
+}
+
+vec3 sphere::random(const vec3 &origin) const {
+  vec3 direction = center_ - origin;
+  onb uvw(unit_vector(direction)); //似乎原文有误,这里构建正交基应该传单位向量
+  float tmp = (radius_ * radius_) / (center_ - origin).squared_length();
+  float cosine_theta_max = sqrt(1 - tmp);
+
+  float r1 = drand_r();
+  float r2 = drand_r();
+  float z = 1 + r2 * (cosine_theta_max - 1);
+  float x = std::cos(2 * M_PI * r1) * std::sqrt(1 - z * z);
+  float y = std::sin(2 * M_PI * r1) * std::sqrt(1 - z * z);
+  return uvw.local(x, y, z);
+}

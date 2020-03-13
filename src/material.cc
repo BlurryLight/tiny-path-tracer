@@ -4,7 +4,7 @@ bool lambertian::scatter(const ray &r_in, const hit_record &hit_rec,
                          scatter_record &scatter_rec) const {
   scatter_rec.is_specular = false;
   scatter_rec.attenuation = albedo_->value(hit_rec.u, hit_rec.v, hit_rec.point);
-  scatter_rec.pdf_ptr = new cosine_pdf(hit_rec.normal);
+  scatter_rec.pdf_ptr.reset(new cosine_pdf(hit_rec.normal));
   return true;
 }
 
@@ -17,11 +17,12 @@ float lambertian::scattering_pdf(const ray &r_in, const hit_record &rec,
 }
 
 bool dielectric::scatter(const ray &r_in, const hit_record &rec,
-                         vec3 &attenuation, ray &scattered) const {
+                         scatter_record &scatter_rec) const {
   vec3 outward_normal;
   vec3 reflected = reflect(r_in.direction(), rec.normal);
   float ni_over_nt;
-  attenuation = vec3(1.0, 1.0, 1.0);
+  scatter_rec.is_specular = true;
+  scatter_rec.attenuation = vec3(1.0, 1.0, 1.0);
 
   vec3 refracted;
   float reflect_prob;
@@ -61,9 +62,9 @@ bool dielectric::scatter(const ray &r_in, const hit_record &rec,
   //反射概率
   //因为我们要采样多次，所以这里可以用随机数来模拟概率(蒙特卡罗)
   if (drand_r() < reflect_prob) {
-    scattered = ray(rec.point, reflected, r_in.time());
+    scatter_rec.specular_ray = ray(rec.point, reflected, r_in.time());
   } else {
-    scattered = ray(rec.point, refracted, r_in.time());
+    scatter_rec.specular_ray = ray(rec.point, refracted, r_in.time());
   }
   return true;
 }
