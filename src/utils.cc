@@ -5,6 +5,7 @@
 #include "perlin_noise.h"
 #include "ray.h"
 #include "rect_box.h"
+#include <memory>
 #include <random>
 #include <sphere.h>
 #define STB_IMAGE_IMPLEMENTATION
@@ -65,8 +66,9 @@ vec3 color(const ray &r, hitable *world, int depth, int max_depth) {
     if (depth < max_depth &&
         rec.mat_ptr->scatter(r, rec, attenuation, scattered, pdf_value)) {
 
-      auto light_shape = new xz_rect(-100, 100, -150, -50, 298, 0);
-      hitable_pdf p0(light_shape, rec.point);
+      auto light_shape =
+          std::make_unique<xz_rect>(-100, 100, -150, -50, 298, nullptr);
+      hitable_pdf p0(light_shape.get(), rec.point);
       cosine_pdf p1(rec.normal);
       mixture_pdf p(&p0, &p1);
       scattered = ray(rec.point, p.generate(), r.time());

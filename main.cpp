@@ -217,6 +217,7 @@ int main(int argc, char **argv) {
   // convert ppm to jpg
   // need imagemagick & Linux
   ofs.flush();
+
   std::string file_list;
   for (auto filename : filenames) {
     file_list += filename;
