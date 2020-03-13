@@ -96,4 +96,15 @@ public:
   vec3 origin_;
 };
 
+inline vec3 de_nan(const vec3 &vec) {
+  vec3 tmp = vec;
+  if (std::isnan(vec.x()))
+    tmp[0] = 0;
+  if (std::isnan(vec.y()))
+    tmp[1] = 0;
+  if (std::isnan(vec.z()))
+    tmp[2] = 0;
+  return tmp;
+}
+
 #endif

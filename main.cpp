@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
 
               ray r = cam.get_ray(u, v);
               auto tmp = color(r, world, 0, sample_max_recurse_depth);
-              col += tmp;
+              col += de_nan(tmp);
               if (count % sample_vec_slice == 0) {
                 // record processing data
                 // eg: eg = 100, bonus_pic = 4, then slice = 25
