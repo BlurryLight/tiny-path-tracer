@@ -21,6 +21,20 @@ bool hitable_list::bounding_box(float t0, float t1, AABB &box) const {
   return true;
 }
 
+float hitable_list::pdf_value(const vec3 &origin, const vec3 &direction) const {
+  float weight = 1.0 / list_size_;
+  float sum = 0;
+  //权重和=1,概率密度积分也恒=1
+  for (int i = 0; i < list_size_; i++)
+    sum += weight * list_[i]->pdf_value(origin, direction);
+  return sum;
+}
+
+vec3 hitable_list::random(const vec3 &origin) const {
+  int index = int(drand_r() * list_size_);
+  return list_[index]->random(origin);
+}
+
 bool hitable_list::hit(const ray &r, float t_min, float t_max,
                        hit_record &rec) const {
   hit_record temp_rec;

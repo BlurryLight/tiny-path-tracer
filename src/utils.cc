@@ -5,6 +5,7 @@
 #include "perlin_noise.h"
 #include "ray.h"
 #include "rect_box.h"
+#include <memory>
 #include <random>
 #include <sphere.h>
 #define STB_IMAGE_IMPLEMENTATION
@@ -21,7 +22,7 @@ vec3 random_in_unit_sphere() {
   vec3 p;
   do {
     p = 2.0 * vec3(drand_r(), drand_r(), drand_r()) - vec3(1.0, 1.0, 1.0);
-  } while (p.squared_length() >= 1.0);
+  } while (p.length() >= 1.0);
   return p;
 }
 double drand_r(double min, double max) {
@@ -54,23 +55,39 @@ vec3 reflect(const vec3 &v, const vec3 &n) // vecin and normal
   return v - 2 * dot(v, n) * n;
 }
 
-vec3 color(const ray &r, hitable *world, int depth, int max_depth) {
-  hit_record rec;
-  if (world->hit(r, 0.001, std::numeric_limits<float>::max(), rec)) {
-    ray scattered;
-    vec3 attenuation;
-    vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.point);
+vec3 color(const ray &r, hitable *world, hitable *light_shape, int depth,
+           int max_depth) {
+  hit_record hit_rec;
+  if (world->hit(r, 0.001, std::numeric_limits<float>::max(), hit_rec)) {
+    scatter_record scatter_rec;
+    vec3 emitted = hit_rec.mat_ptr->emitted(r, hit_rec, hit_rec.u, hit_rec.v,
+                                            hit_rec.point);
     if (depth < max_depth &&
-        rec.mat_ptr->scatter(r, rec, attenuation, scattered)) {
+        hit_rec.mat_ptr->scatter(r, hit_rec, scatter_rec)) {
+      if (scatter_rec.is_specular) {
+        //金属直接反射，不用考虑pdf
+        return scatter_rec.attenuation * color(scatter_rec.specular_ray, world,
+                                               light_shape, depth + 1,
+                                               max_depth);
+      }
+      hitable_pdf p0(light_shape, hit_rec.point);
+      mixture_pdf p(&p0, scatter_rec.pdf_ptr.get());
+      ray scattered = ray(hit_rec.point, p.generate(), r.time());
+      float pdf_value = p.value(scattered.direction());
       return emitted +
-             attenuation * color(scattered, world, depth + 1, max_depth);
+             scatter_rec.attenuation *
+                 hit_rec.mat_ptr->scattering_pdf(r, hit_rec, scattered) *
+                 color(scattered, world, light_shape, depth + 1, max_depth) /
+                 pdf_value;
     } else {
       return emitted;
     }
   } else {
-    vec3 unit_direction = unit_vector(r.direction());
-    float t = (unit_direction.y() + 1.0) * 0.5; // clamp (-1,1) to (0,1)
-    return (0.1) * ((1 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0));
+    return vec3(0, 0, 0);
+    //    vec3 unit_direction = unit_vector(r.direction());
+    //    float t = (unit_direction.y() + 1.0) * 0.5; // clamp (-1,1) to (0,1)
+    //    return (0.1) * ((1 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5,
+    //    0.7, 1.0));
   }
   // linear interperation
   // blend white with blue
@@ -277,23 +294,25 @@ hitable *cornell_box() {
       new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15)));
   material *light = new diffuse_light(new constant_texture(vec3(20, 20, 20)));
 
+  list[i++] = new yz_rect(-300, 300, -300, 300, -300, green); // left
   list[i++] =
-      new flip_normal(new yz_rect(-300, 300, -300, 300, -300, green)); // left
-  list[i++] = new yz_rect(-300, 300, -300, 300, 300, red);             // right
+      new flip_normal(new yz_rect(-300, 300, -300, 300, 300, red));    // right
   list[i++] = new xz_rect(-300, 300, -300, 300, -300, white);          // bottom
   list[i++] =
       new flip_normal(new xz_rect(-300, 300, -300, 300, 300, white)); // top
   list[i++] = new xy_rect(-300, 300, -300, 300, -300, white);
-  list[i++] = new xz_rect(-100, 100, -150, -50, 298, light);
+  list[i++] = new flip_normal(new xz_rect(-100, 100, -150, -50, 298, light));
 
   vec3 rect_box_corner = vec3(-200, -300, -100);
+  material *aluminum = new metal(vec3(0.8, 0.85, 0.88), 0.0);
   list[i++] = new translate(
-      new rotate_y(new box(vec3(0, 0, 0), vec3(200, 350, 75), white), 45.0f),
+      new rotate_y(new box(vec3(0, 0, 0), vec3(200, 350, 75), aluminum), 35.0f),
       rect_box_corner); // rectangle
   vec3 square_box_corner = vec3(30, -300, -50);
   list[i++] = new translate(
-      new rotate_y(new box(vec3(0, 0, 0), vec3(180, 180, 180), white), -15.0f),
+      new rotate_y(new box(vec3(0, 0, 0), vec3(180, 180, 180), white), -25.0f),
       square_box_corner); // square
+  list[i++] = new sphere(vec3(120, -50, 40), 70, new dielectric(1.5));
 
   //  return new hitable_list(list, i);
   return new bvh_node(list, i, 0, 0);
@@ -309,14 +328,14 @@ hitable *cornell_box_smoke() {
       new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15)));
   material *light = new diffuse_light(new constant_texture(vec3(20, 20, 20)));
 
+  list[i++] = new yz_rect(-300, 300, -300, 300, -300, green); // left
   list[i++] =
-      new flip_normal(new yz_rect(-300, 300, -300, 300, -300, green)); // left
-  list[i++] = new yz_rect(-300, 300, -300, 300, 300, red);             // right
+      new flip_normal(new yz_rect(-300, 300, -300, 300, 300, red));    // right
   list[i++] = new xz_rect(-300, 300, -300, 300, -300, white);          // bottom
   list[i++] =
       new flip_normal(new xz_rect(-300, 300, -300, 300, 300, white)); // top
   list[i++] = new xy_rect(-300, 300, -300, 300, -300, white);
-  list[i++] = new xz_rect(-100, 100, -150, -50, 298, light);
+  list[i++] = new flip_normal(new xz_rect(-100, 100, -150, -50, 298, light));
 
   vec3 rect_box_corner = vec3(-200, -300, -100);
   auto rec_box = new translate(
@@ -336,3 +355,102 @@ hitable *cornell_box_smoke() {
 
   return new hitable_list(list, i);
 }
+
+hitable *oneweek_final() {
+  int nb = 20;
+  hitable **list = new hitable *[30];
+  hitable **boxlist = new hitable *[10000];
+  hitable **boxlist2 = new hitable *[10000];
+  material *white =
+      new lambertian(new constant_texture(vec3(0.73, 0.73, 0.73)));
+  material *ground =
+      new lambertian(new constant_texture(vec3(0.48, 0.83, 0.53)));
+  int b = 0;
+  for (int i = 0; i < nb; i++) {
+    for (int j = 0; j < nb; j++) {
+      float w = 100;
+      float x0 = -1000 + i * w;
+      float z0 = -1000 + j * w;
+      float y0 = 0;
+      float x1 = x0 + w;
+      float y1 = 100 * (drand_r() + 0.01);
+      float z1 = z0 + w;
+      boxlist[b++] = new box(vec3(x0, y0, z0), vec3(x1, y1, z1), ground);
+    }
+  }
+  int l = 0;
+  list[l++] = new bvh_node(boxlist, b, 0, 1);
+  material *light = new diffuse_light(new constant_texture(vec3(7, 7, 7)));
+  list[l++] = new xz_rect(123, 423, 147, 412, 554, light);
+  vec3 center(400, 400, 200);
+  list[l++] = new moving_sphere(
+      center, center + vec3(30, 0, 0), 0, 1, 50,
+      new lambertian(new constant_texture(vec3(0.7, 0.3, 0.1))));
+  list[l++] = new sphere(vec3(260, 150, 45), 50, new dielectric(1.5));
+  list[l++] =
+      new sphere(vec3(0, 150, 145), 50, new metal(vec3(0.8, 0.8, 0.9), 10.0));
+  hitable *boundary = new sphere(vec3(360, 150, 145), 70, new dielectric(1.5));
+  list[l++] = boundary;
+  list[l++] = new constant_medium(boundary, 0.2,
+                                  new constant_texture(vec3(0.2, 0.4, 0.9)));
+  boundary = new sphere(vec3(0, 0, 0), 5000, new dielectric(1.5));
+  list[l++] = new constant_medium(boundary, 0.0001,
+                                  new constant_texture(vec3(1.0, 1.0, 1.0)));
+  int nx, ny, nn;
+  unsigned char *tex_data = stbi_load("earthmap.jpg", &nx, &ny, &nn, 0);
+  material *emat = new lambertian(new image_texture(tex_data, nx, ny));
+  list[l++] = new sphere(vec3(400, 200, 400), 100, emat);
+  texture *pertext = new perlin_noise_texture(0.1);
+  list[l++] = new sphere(vec3(220, 280, 300), 80, new lambertian(pertext));
+  int ns = 1000;
+  for (int j = 0; j < ns; j++) {
+    boxlist2[j] = new sphere(
+        vec3(165 * drand_r(), 165 * drand_r(), 165 * drand_r()), 10, white);
+  }
+  list[l++] =
+      new translate(new rotate_y(new bvh_node(boxlist2, ns, 0.0, 1.0), 15),
+                    vec3(-100, 270, 395));
+  return new hitable_list(list, l);
+}
+
+vec3 random_on_sphere() {
+  // some magic here
+  // keyword: uniform sample on a sphere
+  float r1 = drand_r();
+  float r2 = drand_r();
+  float x = std::cos(2 * M_PI * r1) * 2 * std::sqrt(r2 * (1 - r2));
+  float y = std::sin(2 * M_PI * r1) * 2 * std::sqrt(r2 * (1 - r2));
+  float z = 1 - 2 * r2;
+  return vec3(x, y, z);
+}
+
+vec3 random_on_hemisphere() {
+  float r1 = drand_r();
+  float r2 = drand_r();
+  float phi = 2 * M_PI * r1;
+  float x = std::cos(phi) * std::sqrt(r2);
+  float y = std::sin(phi) * std::sqrt(r2);
+  float z = std::sqrt(1 - r2);
+  return vec3(x, y, z);
+}
+
+void onb::build_from_w(const vec3 &normal) {
+  axis_[2] = normal;
+  vec3 tmp;
+  if (std::abs(normal.x()) > 0.9) // is normal x-axis?
+  {
+    // normal is x-axis ,so let tmp be y-axis
+    tmp = vec3(0, 1, 0);
+  } else {
+    tmp = vec3(1, 0, 0);
+  }
+
+  axis_[1] = unit_vector(cross(normal, tmp));
+  axis_[0] = cross(v(), w());
+}
+
+float hitable_pdf::value(const vec3 &direction) const {
+  return ptr_->pdf_value(origin_, direction);
+}
+
+vec3 hitable_pdf::generate() const { return ptr_->random(origin_); }

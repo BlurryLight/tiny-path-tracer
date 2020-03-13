@@ -5,6 +5,7 @@
 #include "ray.h"
 #include "texture.h"
 #include <algorithm>
+#include <memory>
 // forward declaration
 class AABB;
 struct hit_record;
@@ -19,11 +20,22 @@ struct hit_record {
   material *mat_ptr;
 };
 
+struct scatter_record {
+  ray specular_ray;
+  bool is_specular;
+  vec3 attenuation;
+  std::shared_ptr<pdf> pdf_ptr;
+};
+
 class hitable {
 public:
   virtual bool hit(const ray &r, float t_min, float t_max,
                    hit_record &rec) const = 0;
   virtual bool bounding_box(float t0, float t1, AABB &box) const = 0;
+  virtual float pdf_value(const vec3 &origin, const vec3 &direction) const {
+    return 0.0;
+  }
+  virtual vec3 random(const vec3 &origin) const { return vec3(1, 0, 0); }
 };
 
 

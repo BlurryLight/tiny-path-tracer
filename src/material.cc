@@ -1,28 +1,28 @@
 #include "material.h"
 #include "hitable.h"
-bool lambertian::scatter(const ray &r_in, const hit_record &rec,
-                         vec3 &attenuation, ray &scattered) const {
-  vec3 target = rec.point + random_in_unit_sphere();
-  scattered = ray(rec.point, target - rec.point, r_in.time());
-  attenuation = albedo_->value(rec.u, rec.v, rec.point);
+bool lambertian::scatter(const ray &r_in, const hit_record &hit_rec,
+                         scatter_record &scatter_rec) const {
+  scatter_rec.is_specular = false;
+  scatter_rec.attenuation = albedo_->value(hit_rec.u, hit_rec.v, hit_rec.point);
+  scatter_rec.pdf_ptr.reset(new cosine_pdf(hit_rec.normal));
   return true;
 }
 
-bool metal::scatter(const ray &r_in, const hit_record &rec, vec3 &attenuation,
-                    ray &scattered) const {
-  vec3 reflected = reflect(unit_vector(r_in.direction_), rec.normal);
-  scattered =
-      ray(rec.point, reflected + fuzz_ * random_in_unit_sphere(), r_in.time());
-  attenuation = albedo_;
-  return (dot(scattered.direction(), rec.normal) > 0);
+float lambertian::scattering_pdf(const ray &r_in, const hit_record &rec,
+                                 const ray &scattered) const {
+  float cosine = dot(rec.normal, unit_vector(scattered.direction()));
+  if (cosine < 0)
+    return 0;
+  return cosine / M_PI;
 }
 
 bool dielectric::scatter(const ray &r_in, const hit_record &rec,
-                         vec3 &attenuation, ray &scattered) const {
+                         scatter_record &scatter_rec) const {
   vec3 outward_normal;
   vec3 reflected = reflect(r_in.direction(), rec.normal);
   float ni_over_nt;
-  attenuation = vec3(1.0, 1.0, 1.0);
+  scatter_rec.is_specular = true;
+  scatter_rec.attenuation = vec3(1.0, 1.0, 1.0);
 
   vec3 refracted;
   float reflect_prob;
@@ -62,9 +62,9 @@ bool dielectric::scatter(const ray &r_in, const hit_record &rec,
   //反射概率
   //因为我们要采样多次，所以这里可以用随机数来模拟概率(蒙特卡罗)
   if (drand_r() < reflect_prob) {
-    scattered = ray(rec.point, reflected, r_in.time());
+    scatter_rec.specular_ray = ray(rec.point, reflected, r_in.time());
   } else {
-    scattered = ray(rec.point, refracted, r_in.time());
+    scatter_rec.specular_ray = ray(rec.point, refracted, r_in.time());
   }
   return true;
 }
@@ -74,4 +74,25 @@ bool isotropic::scatter(const ray &r_in, const hit_record &rec,
   scattered = ray(rec.point, random_in_unit_sphere());
   attenuation = albedo_->value(rec.u, rec.v, rec.point);
   return true;
+}
+
+vec3 diffuse_light::emitted(const ray &r_in, const hit_record &rec, float u,
+                            float v, const vec3 &p) const {
+  if (dot(rec.normal, r_in.direction()) < 0)
+    return emit_->value(u, v, p);
+  else {
+    return vec3(0, 0, 0);
+  }
+}
+
+bool metal::scatter(const ray &r_in, const hit_record &rec,
+                    scatter_record &scatter_rec) const {
+
+  vec3 reflected = reflect(unit_vector(r_in.direction_), rec.normal);
+  scatter_rec.specular_ray =
+      ray(rec.point, reflected + fuzz_ * random_in_unit_sphere(), r_in.time());
+  scatter_rec.attenuation = albedo_;
+  scatter_rec.is_specular = true;
+  scatter_rec.pdf_ptr = nullptr;
+  return (dot(scatter_rec.specular_ray.direction(), rec.normal) > 0);
 }

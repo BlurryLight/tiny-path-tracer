@@ -23,6 +23,25 @@ bool xy_rect::hit(const ray &r, float t_min, float t_max,
   return true;
 }
 
+float xz_rect::pdf_value(const vec3 &origin, const vec3 &direction) const {
+  hit_record rec;
+  if (this->hit(ray(origin, direction), 0.0001,
+                std::numeric_limits<float>::max(), rec)) {
+    float rec_area = std::abs((x1_ - x0_) * (z1_ - z0_));
+    float distance_squared =
+        (rec.t * direction).squared_length(); // is that right?
+    float cosine = std::abs(dot(direction, rec.normal) / direction.length());
+    return distance_squared / (cosine * rec_area);
+  }
+  return 0.0f;
+}
+
+vec3 xz_rect::random(const vec3 &origin) const {
+  vec3 random_point =
+      vec3(x0_ + drand_r() * (x1_ - x0_), k_, z0_ + drand_r() * (z1_ - z0_));
+  return random_point - origin;
+}
+
 bool xz_rect::bounding_box(float t0, float t1, AABB &box) const {
 
   box = AABB(vec3(x0_, k_ - 0.0001, z0_), vec3(x1_, k_ + 0.0001, z1_));
