@@ -21,32 +21,32 @@ ALL HONOR BELONGS TO Peter Shirley.
 **image**目录有原图
 - 金属、玻璃球(1200x1200p, 2048samples,时长941秒)
 
-![cbox1](image/9.jpg =600x600)
+![cbox1](image/9.jpg)
 - 传统cornell box
 
-![cbox2](image/8.jpg =600x600)
+![cbox2](image/8.jpg)
 
 ## 其他有意思的结果/场景
 
 - [x] ray tracing in one weekend(cpu并行,1600p x 1600p x 100 samples,渲染时长: 290s)
-![one weekend](image/1.jpg =600x600)
+![one weekend](image/1.jpg)
 
 - [x] Bounding Volume Hierarchies优化 (CPU并行，1600p x 1600p x 300 samples,渲染时长: 80.1s)
 
-![BVH](image/2.jpg =600x600)
+![BVH](image/2.jpg)
 
 - [x] perlin noise(柏林噪音)
 
-![perlin1](image/3.jpg =600x600)
+![perlin1](image/3.jpg)
 
-![perlin2](image/4.jpg =600x600)
+![perlin2](image/4.jpg)
 
 - [x] sphere uv mapping
 
-![earth](image/5.jpg =600x600)
+![earth](image/5.jpg)
 
 - [x] cornell box(没有用Monte-Carlo,随机均匀采样，噪点有点严重)
 
-![box1](image/6.jpg =600x600)
+![box1](image/6.jpg)
 
-![box2](image/7.jpg =600x600)
+![box2](image/7.jpg)
