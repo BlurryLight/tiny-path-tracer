@@ -1,12 +1,10 @@
 #include "material.h"
 #include "hitable.h"
-bool lambertian::scatter(const ray &r_in, const hit_record &rec,
-                         vec3 &attenuation, ray &scattered, float &pdf) const {
-  onb uvw(rec.normal);
-  vec3 direction = uvw.local(random_on_hemisphere());
-  scattered = ray(rec.point, unit_vector(direction), r_in.time());
-  attenuation = albedo_->value(rec.u, rec.v, rec.point);
-  pdf = dot(uvw.w(), scattered.direction()) / M_PI;
+bool lambertian::scatter(const ray &r_in, const hit_record &hit_rec,
+                         scatter_record &scatter_rec) const {
+  scatter_rec.is_specular = false;
+  scatter_rec.attenuation = albedo_->value(hit_rec.u, hit_rec.v, hit_rec.point);
+  scatter_rec.pdf_ptr = new cosine_pdf(hit_rec.normal);
   return true;
 }
 
@@ -16,15 +14,6 @@ float lambertian::scattering_pdf(const ray &r_in, const hit_record &rec,
   if (cosine < 0)
     return 0;
   return cosine / M_PI;
-}
-
-bool metal::scatter(const ray &r_in, const hit_record &rec, vec3 &attenuation,
-                    ray &scattered) const {
-  vec3 reflected = reflect(unit_vector(r_in.direction_), rec.normal);
-  scattered =
-      ray(rec.point, reflected + fuzz_ * random_in_unit_sphere(), r_in.time());
-  attenuation = albedo_;
-  return (dot(scattered.direction(), rec.normal) > 0);
 }
 
 bool dielectric::scatter(const ray &r_in, const hit_record &rec,
@@ -93,4 +82,16 @@ vec3 diffuse_light::emitted(const ray &r_in, const hit_record &rec, float u,
   else {
     return vec3(0, 0, 0);
   }
+}
+
+bool metal::scatter(const ray &r_in, const hit_record &rec,
+                    scatter_record &scatter_rec) const {
+
+  vec3 reflected = reflect(unit_vector(r_in.direction_), rec.normal);
+  scatter_rec.specular_ray =
+      ray(rec.point, reflected + fuzz_ * random_in_unit_sphere(), r_in.time());
+  scatter_rec.attenuation = albedo_;
+  scatter_rec.is_specular = true;
+  scatter_rec.pdf_ptr = nullptr;
+  return (dot(scatter_rec.specular_ray.direction(), rec.normal) > 0);
 }

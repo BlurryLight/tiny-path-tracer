@@ -55,27 +55,30 @@ vec3 reflect(const vec3 &v, const vec3 &n) // vecin and normal
   return v - 2 * dot(v, n) * n;
 }
 
-vec3 color(const ray &r, hitable *world, int depth, int max_depth) {
-  hit_record rec;
-  if (world->hit(r, 0.001, std::numeric_limits<float>::max(), rec)) {
-    ray scattered;
-    vec3 attenuation;
-    // attenuation = albedo
-    vec3 emitted = rec.mat_ptr->emitted(r, rec, rec.u, rec.v, rec.point);
-    float pdf_value;
+vec3 color(const ray &r, hitable *world, hitable *light_shape, int depth,
+           int max_depth) {
+  hit_record hit_rec;
+  if (world->hit(r, 0.001, std::numeric_limits<float>::max(), hit_rec)) {
+    scatter_record scatter_rec;
+    vec3 emitted = hit_rec.mat_ptr->emitted(r, hit_rec, hit_rec.u, hit_rec.v,
+                                            hit_rec.point);
     if (depth < max_depth &&
-        rec.mat_ptr->scatter(r, rec, attenuation, scattered, pdf_value)) {
-
-      auto light_shape =
-          std::make_unique<xz_rect>(-100, 100, -150, -50, 298, nullptr);
-      hitable_pdf p0(light_shape.get(), rec.point);
-      cosine_pdf p1(rec.normal);
-      mixture_pdf p(&p0, &p1);
-      scattered = ray(rec.point, p.generate(), r.time());
-      pdf_value = p.value(scattered.direction());
+        hit_rec.mat_ptr->scatter(r, hit_rec, scatter_rec)) {
+      if (scatter_rec.is_specular) {
+        //金属直接反射，不用考虑pdf
+        return scatter_rec.attenuation * color(scatter_rec.specular_ray, world,
+                                               light_shape, depth + 1,
+                                               max_depth);
+      }
+      hitable_pdf p0(light_shape, hit_rec.point);
+      mixture_pdf p(&p0, scatter_rec.pdf_ptr);
+      ray scattered = ray(hit_rec.point, p.generate(), r.time());
+      float pdf_value = p.value(scattered.direction());
       return emitted +
-             attenuation * rec.mat_ptr->scattering_pdf(r, rec, scattered) *
-                 color(scattered, world, depth + 1, max_depth) / pdf_value;
+             scatter_rec.attenuation *
+                 hit_rec.mat_ptr->scattering_pdf(r, hit_rec, scattered) *
+                 color(scattered, world, light_shape, depth + 1, max_depth) /
+                 pdf_value;
     } else {
       return emitted;
     }
@@ -301,8 +304,9 @@ hitable *cornell_box() {
   list[i++] = new flip_normal(new xz_rect(-100, 100, -150, -50, 298, light));
 
   vec3 rect_box_corner = vec3(-200, -300, -100);
+  material *aluminum = new metal(vec3(0.8, 0.85, 0.88), 0.0);
   list[i++] = new translate(
-      new rotate_y(new box(vec3(0, 0, 0), vec3(200, 350, 75), white), 45.0f),
+      new rotate_y(new box(vec3(0, 0, 0), vec3(200, 350, 75), aluminum), 45.0f),
       rect_box_corner); // rectangle
   vec3 square_box_corner = vec3(30, -300, -50);
   list[i++] = new translate(

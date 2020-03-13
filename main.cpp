@@ -12,6 +12,7 @@
 #include <iostream>
 #include <map>
 #include <mutex>
+#include <rect_box.h>
 #include <thread>
 #include <unordered_map>
 
@@ -94,6 +95,8 @@ int main(int argc, char **argv) {
   std::unordered_map<std::string, std::vector<vec3>> pixel_sample_cols;
   std::deque<std::thread> thread_vec;
 
+  auto light_shape =
+      std::make_unique<xz_rect>(-100, 100, -150, -50, 298, nullptr);
   std::condition_variable thread_end;
   auto start = std::chrono::high_resolution_clock::now();
   for (int j = ny - 1; j >= 0; j--) {
@@ -114,7 +117,8 @@ int main(int argc, char **argv) {
               float v = ((float)index + drand_r()) / (float)ny;
 
               ray r = cam.get_ray(u, v);
-              auto tmp = color(r, world, 0, sample_max_recurse_depth);
+              auto tmp = color(r, world, light_shape.get(), 0,
+                               sample_max_recurse_depth);
               col += de_nan(tmp);
               if (count % sample_vec_slice == 0) {
                 // record processing data

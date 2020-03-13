@@ -1,6 +1,7 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
 
+#include <hitable.h>
 #include <ray.h>
 #include <texture.h>
 #include <vec3.h>
@@ -10,7 +11,7 @@ struct hit_record;
 class material {
 public:
   virtual bool scatter(const ray &r_in, const hit_record &rec,
-                       vec3 &attenuation, ray &scattered, float &pdf) const {
+                       scatter_record &scatter_rec) const {
     return false;
   }
   virtual float scattering_pdf(const ray &r_in, const hit_record &rec,
@@ -27,8 +28,7 @@ class lambertian : public material {
 public:
   lambertian(texture *albedo) : albedo_(albedo) {}
   virtual bool scatter(const ray &r_in, const hit_record &rec,
-                       vec3 &attenuation, ray &scattered,
-                       float &pdf) const override;
+                       scatter_record &scatter_rec) const override;
   virtual float scattering_pdf(const ray &r_in, const hit_record &rec,
                                const ray &scattered) const override;
 
@@ -45,7 +45,7 @@ public:
       fuzz_ = 1;
   }
   virtual bool scatter(const ray &r_in, const hit_record &rec,
-                       vec3 &attenuation, ray &scattered) const;
+                       scatter_record &scatter_rec) const override;
   vec3 albedo_;
   float fuzz_;
   // fuzz_: 一个模糊系数，可以让金属的反射向量 = reflect + fuzz * random_unit
