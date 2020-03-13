@@ -22,6 +22,9 @@ public:
   virtual bool bounding_box(float t0, float t1, AABB &box) const override;
   virtual bool hit(const ray &r, float t_min, float t_max,
                    hit_record &rec) const override;
+  virtual float pdf_value(const vec3 &origin,
+                          const vec3 &direction) const override;
+  virtual vec3 random(const vec3 &origin) const override;
   material *mat_ptr_;
   float x0_, x1_, z0_, z1_, k_; // y = k
 };
@@ -111,4 +114,20 @@ public:
   bool has_box_;
   AABB box_;
 };
+
+class mixture_pdf : public pdf {
+public:
+  mixture_pdf(pdf *pdf0, pdf *pdf1) {
+    p[0] = pdf0;
+    p[1] = pdf1;
+  }
+  virtual float value(const vec3 &direction) const override {
+    return 0.5 * p[0]->value(direction) + 0.5 * p[1]->value(direction);
+  }
+  virtual vec3 generate() const override {
+    return (drand_r() < 0.5) ? p[0]->generate() : p[1]->generate();
+  }
+  pdf *p[2];
+};
+
 #endif

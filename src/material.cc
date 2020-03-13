@@ -2,10 +2,11 @@
 #include "hitable.h"
 bool lambertian::scatter(const ray &r_in, const hit_record &rec,
                          vec3 &attenuation, ray &scattered, float &pdf) const {
-  vec3 target = rec.point + random_in_unit_sphere();
-  scattered = ray(rec.point, target - rec.point, r_in.time());
+  onb uvw(rec.normal);
+  vec3 direction = uvw.local(random_on_hemisphere());
+  scattered = ray(rec.point, unit_vector(direction), r_in.time());
   attenuation = albedo_->value(rec.u, rec.v, rec.point);
-  pdf = 0.5f / M_PI;
+  pdf = dot(uvw.w(), scattered.direction()) / M_PI;
   return true;
 }
 

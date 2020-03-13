@@ -61,25 +61,19 @@ vec3 color(const ray &r, hitable *world, int depth, int max_depth) {
     vec3 attenuation;
     // attenuation = albedo
     vec3 emitted = rec.mat_ptr->emitted(r, rec, rec.u, rec.v, rec.point);
-    float pdf;
+    float pdf_value;
     if (depth < max_depth &&
-        rec.mat_ptr->scatter(r, rec, attenuation, scattered, pdf)) {
+        rec.mat_ptr->scatter(r, rec, attenuation, scattered, pdf_value)) {
 
-      vec3 on_light = vec3(-100 + drand_r() * 200, 298, -150 + drand_r() * 100);
-      vec3 to_light = on_light - rec.point;
-      float distance_squared = to_light.squared_length();
-      to_light.make_unit_vector();
-      if (dot(to_light, rec.normal) < 0) // on light
-        return emitted;
-      float light_area = 200 * 200;
-      float light_cosine = std::abs(to_light.y());
-      if (light_cosine < 0.00001)
-        return emitted;
-      pdf = distance_squared / (light_cosine * light_area);
-      scattered = ray(rec.point, to_light, r.time());
-      return emitted + attenuation *
-                           rec.mat_ptr->scattering_pdf(r, rec, scattered) *
-                           color(scattered, world, depth + 1, max_depth) / pdf;
+      auto light_shape = new xz_rect(-100, 100, -150, -50, 298, 0);
+      hitable_pdf p0(light_shape, rec.point);
+      cosine_pdf p1(rec.normal);
+      mixture_pdf p(&p0, &p1);
+      scattered = ray(rec.point, p.generate(), r.time());
+      pdf_value = p.value(scattered.direction());
+      return emitted +
+             attenuation * rec.mat_ptr->scattering_pdf(r, rec, scattered) *
+                 color(scattered, world, depth + 1, max_depth) / pdf_value;
     } else {
       return emitted;
     }
@@ -411,3 +405,45 @@ hitable *oneweek_final() {
                     vec3(-100, 270, 395));
   return new hitable_list(list, l);
 }
+
+vec3 random_on_sphere() {
+  // some magic here
+  // keyword: uniform sample on a sphere
+  float r1 = drand_r();
+  float r2 = drand_r();
+  float x = std::cos(2 * M_PI * r1) * 2 * std::sqrt(r2 * (1 - r2));
+  float y = std::sin(2 * M_PI * r1) * 2 * std::sqrt(r2 * (1 - r2));
+  float z = 1 - 2 * r2;
+  return vec3(x, y, z);
+}
+
+vec3 random_on_hemisphere() {
+  float r1 = drand_r();
+  float r2 = drand_r();
+  float phi = 2 * M_PI * r1;
+  float x = std::cos(phi) * std::sqrt(r2);
+  float y = std::sin(phi) * std::sqrt(r2);
+  float z = std::sqrt(1 - r2);
+  return vec3(x, y, z);
+}
+
+void onb::build_from_w(const vec3 &normal) {
+  axis_[2] = normal;
+  vec3 tmp;
+  if (std::abs(normal.x()) > 0.9) // is normal x-axis?
+  {
+    // normal is x-axis ,so let tmp be y-axis
+    tmp = vec3(0, 1, 0);
+  } else {
+    tmp = vec3(1, 0, 0);
+  }
+
+  axis_[1] = unit_vector(cross(normal, tmp));
+  axis_[0] = cross(v(), w());
+}
+
+float hitable_pdf::value(const vec3 &direction) const {
+  return ptr_->pdf_value(origin_, direction);
+}
+
+vec3 hitable_pdf::generate() const { return ptr_->random(origin_); }
