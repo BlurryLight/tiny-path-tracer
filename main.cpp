@@ -8,6 +8,7 @@
 #include <condition_variable>
 #include <deque>
 #include <fstream>
+#include <future>
 #include <hitable_list.h>
 #include <iostream>
 #include <map>
@@ -29,7 +30,7 @@ int main(int argc, char **argv) {
   // default value
   int nx = 400;
   int ny = 200;
-  int ns = 10; // anti-alisaing sample
+  int ns = 10;          // anti-alisaing sample
   float aperture = 0.2; // the larger, the edge becomes more blurred
   float time0 = 0.0f;
   float time1 = 1.0f;
@@ -93,7 +94,7 @@ int main(int argc, char **argv) {
   std::mutex mutex_2;
   std::map<int, std::vector<int>> result;
   std::unordered_map<std::string, std::vector<vec3>> pixel_sample_cols;
-  std::deque<std::thread> thread_vec;
+  std::vector<std::future<void>> futures;
 
   auto light_shape =
       std::make_unique<xz_rect>(-100, 100, -150, -50, 298, nullptr);
@@ -105,57 +106,56 @@ int main(int argc, char **argv) {
   hitable_list hlist(a, 2);
   std::condition_variable thread_end;
   auto start = std::chrono::high_resolution_clock::now();
+  auto render_a_pixel = [&](int index) {
+    thread_local std::vector<int> row_colors;
+    int sample_vec_slice = ns;
+    if (allow_bonus_pic) {
+      sample_vec_slice = ns / bonus_pic;
+    }
+    for (int i = 0; i < nx; i++) {
+      std::vector<vec3> sample_cols;
+      vec3 col = vec3(0.0, 0.0, 0.0);
+      int count = 0;
+      for (int k = 0; k < ns; k++) {
+        ++count;
+        float u = ((float)i + drand_r()) / (float)nx;
+        float v = ((float)index + drand_r()) / (float)ny;
+
+        ray r = cam.get_ray(u, v);
+        auto tmp = color(r, world, &hlist, 0, sample_max_recurse_depth);
+        col += de_nan(tmp);
+        if (count % sample_vec_slice == 0) {
+          // record processing data
+          // eg: eg = 100, bonus_pic = 4, then slice = 25
+          // when sample num reaches 25,50,75,100,vec will record the
+          // colors
+          sample_cols.push_back(col);
+        }
+      }
+      col /= float(ns);
+      col = vec3(sqrt(col.r()), sqrt(col.g()), sqrt(col.b()));
+      int red = int(255.99f * col.r());
+      int green = int(255.99f * col.g());
+      int blue = int(255.99f * col.b());
+      row_colors.push_back(red);
+      row_colors.push_back(green);
+      row_colors.push_back(blue);
+
+      {
+        std::lock_guard<std::mutex> lock(mutex_2);
+        auto key = std::to_string(i) + "+" + std::to_string(index);
+        pixel_sample_cols.insert({key, sample_cols});
+      }
+    }
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      result.insert({index, row_colors});
+    }
+
+    thread_end.notify_one();
+  };
   for (int j = ny - 1; j >= 0; j--) {
-    thread_vec.emplace_back(
-        [&](int index) {
-          thread_local std::vector<int> row_colors;
-          int sample_vec_slice = ns;
-          if (allow_bonus_pic) {
-            sample_vec_slice = ns / bonus_pic;
-          }
-          for (int i = 0; i < nx; i++) {
-            std::vector<vec3> sample_cols;
-            vec3 col = vec3(0.0, 0.0, 0.0);
-            int count = 0;
-            for (int k = 0; k < ns; k++) {
-              ++count;
-              float u = ((float)i + drand_r()) / (float)nx;
-              float v = ((float)index + drand_r()) / (float)ny;
-
-              ray r = cam.get_ray(u, v);
-              auto tmp = color(r, world, &hlist, 0, sample_max_recurse_depth);
-              col += de_nan(tmp);
-              if (count % sample_vec_slice == 0) {
-                // record processing data
-                // eg: eg = 100, bonus_pic = 4, then slice = 25
-                // when sample num reaches 25,50,75,100,vec will record the
-                // colors
-                sample_cols.push_back(col);
-              }
-            }
-            col /= float(ns);
-            col = vec3(sqrt(col.r()), sqrt(col.g()), sqrt(col.b()));
-            int red = int(255.99f * col.r());
-            int green = int(255.99f * col.g());
-            int blue = int(255.99f * col.b());
-            row_colors.push_back(red);
-            row_colors.push_back(green);
-            row_colors.push_back(blue);
-
-            {
-              std::lock_guard<std::mutex> lock(mutex_2);
-              auto key = std::to_string(i) + "+" + std::to_string(index);
-              pixel_sample_cols.insert({key, sample_cols});
-            }
-          }
-          {
-            std::lock_guard<std::mutex> lock(mutex_);
-            result.insert({index, row_colors});
-          }
-
-          thread_end.notify_one();
-        },
-        j);
+    futures.emplace_back(std::async(std::launch::deferred | std::launch::async,render_a_pixel,j));
   }
   {
     // RAII
@@ -168,11 +168,10 @@ int main(int argc, char **argv) {
                            thread_end - start)
                            .count() /
                        1000.0f;
-    float scale = 1.5f; // magic number
-    std::cout << "estimate time: " << thread_time * scale << " s" << std::endl;
+    std::cout << "estimate time: " << thread_time * ny / std::thread::hardware_concurrency() << " s" << std::endl;
   }
-  for (auto &i : thread_vec) {
-    i.join();
+  for (auto &i : futures) {
+    i.wait();
   }
   auto valid_rgb = [](int rgb) {
     if (rgb < 0)
