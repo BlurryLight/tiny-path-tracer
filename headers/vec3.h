@@ -142,5 +142,18 @@ vec3 &vec3::operator*=(const float t) {
 
 inline vec3 normalize(vec3 v) { return v / v.length(); }
 inline vec3 unit_vector(vec3 v) { return normalize(v); }
+inline vec3 vec_min(const vec3 &v1, const vec3 &v2) {
+    return vec3(
+            std::min(v1.x(),v2.x()),
+            std::min(v1.y(),v2.y()),
+            std::min(v1.z(),v2.z()));
+}
+
+inline vec3 vec_max(const vec3 &v1, const vec3 &v2) {
+    return vec3(
+            std::max(v1.x(),v2.x()),
+            std::max(v1.y(),v2.y()),
+            std::max(v1.z(),v2.z()));
+}
 
 #endif // VEC3_H

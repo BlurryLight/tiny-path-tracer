@@ -127,25 +127,44 @@ rotate_y::rotate_y(hitable *p, float angle) : ptr_(p) {
   vec3 min(fmax, fmax, fmax);
   vec3 max(-fmax, -fmax, -fmax);
   // find new bbox(new vec3 min . vec3 max)
-  for (int i = 0; i < 2; i++) {
-    for (int j = 0; j < 2; j++) {
+  //   naive method : original book version
+  //   for (int i = 0; i < 2; i++) {
+  //     for (int j = 0; j < 2; j++) {
 
-      for (int k = 0; k < 2; k++) {
-        float x = i * box_.max().x() + (1 - i) * box_.min().x();
-        float y = j * box_.max().y() + (1 - j) * box_.min().y();
-        float z = k * box_.max().z() + (1 - k) * box_.min().z();
-        float new_x = cos_theta_ * x + sin_theta_ * z;
-        float new_z = -sin_theta_ * x + cos_theta_ * z;
-        vec3 tester(new_x, y, new_z);
-        for (int m = 0; m < 3; m++) {
-          if (tester[m] > max[m])
-            max[m] = tester[m];
-          if (tester[m] < min[m])
-            min[m] = tester[m];
-        }
-      }
-    }
-  }
+  //       for (int k = 0; k < 2; k++) {
+  //         float x = i * box_.max().x() + (1 - i) * box_.min().x();
+  //         float y = j * box_.max().y() + (1 - j) * box_.min().y();
+  //         float z = k * box_.max().z() + (1 - k) * box_.min().z();
+  //         float new_x = cos_theta_ * x + sin_theta_ * z;
+  //         float new_z = -sin_theta_ * x + cos_theta_ * z;
+  //         vec3 tester(new_x, y, new_z);
+  //         for (int m = 0; m < 3; m++) {
+  //           if (tester[m] > max[m])
+  //             max[m] = tester[m];
+  //           if (tester[m] < min[m])
+  //             min[m] = tester[m];
+  //         }
+  //       }
+  //     }
+  //   }
+  // effecitve version
+  // see http://dev.theomader.com/transform-bounding-boxes/
+  vec3 first_column{cos_theta_, 0, -sin_theta_};
+  vec3 second_column{0, 1, 0};
+  vec3 third_column{sin_theta_, 0, cos_theta_};
+
+  vec3 xa = first_column * box_.max().x();
+  vec3 xb = first_column * box_.min().x();
+
+  vec3 ya = second_column * box_.max().y();
+  vec3 yb = second_column * box_.min().y();
+
+  vec3 za = third_column * box_.max().z();
+  vec3 zb = third_column * box_.min().z();
+
+  min = vec_min(xa, xb) + vec_min(ya, yb) + vec_min(za, zb);
+  max = vec_max(xa, xb) + vec_max(ya, yb) + vec_max(za, zb);
+
   box_ = AABB(min, max);
 }
 
