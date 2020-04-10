@@ -98,12 +98,6 @@ int main(int argc, char **argv) {
 
   auto light_shape =
       std::make_unique<xz_rect>(-100, 100, -150, -50, 298, nullptr);
-  auto sphere_shape =
-      std::make_unique<sphere>(vec3(120, -50, 40), 120, nullptr);
-  hitable *a[2];
-  a[0] = light_shape.get();
-  a[1] = sphere_shape.get();
-  hitable_list hlist(a, 2);
   std::condition_variable thread_end;
   auto start = std::chrono::high_resolution_clock::now();
   auto render_a_pixel = [&](int index) {
@@ -122,7 +116,7 @@ int main(int argc, char **argv) {
         float v = ((float)index + drand_r()) / (float)ny;
 
         ray r = cam.get_ray(u, v);
-        auto tmp = color(r, world, &hlist, 0, sample_max_recurse_depth);
+        auto tmp = color_shadow(r, world, light_shape.get(), 0, sample_max_recurse_depth);
         col += de_nan(tmp);
         if (count % sample_vec_slice == 0) {
           // record processing data

@@ -54,6 +54,56 @@ vec3 reflect(const vec3 &v, const vec3 &n) // vecin and normal
 {
   return v - 2 * dot(v, n) * n;
 }
+vec3 color_shadow(const ray &r, hitable *world, hitable *light_shape, int depth,
+           int max_depth) {
+  hit_record hit_rec;
+  if (world->hit(r, 0.001, std::numeric_limits<float>::max(), hit_rec)) {
+    scatter_record scatter_rec;
+    vec3 emitted = hit_rec.mat_ptr->emitted(r, hit_rec, hit_rec.u, hit_rec.v,
+                                            hit_rec.point);
+    if (depth < max_depth &&
+        hit_rec.mat_ptr->scatter(r, hit_rec, scatter_rec)) {
+      if (scatter_rec.is_specular) {
+        //金属直接反射，不用考虑pdf
+        return scatter_rec.attenuation * color(scatter_rec.specular_ray, world,
+                                               light_shape, depth + 1,
+                                               max_depth);
+      }
+      vec3 Light_color{20,20,20};
+      vec3 L_dir{0,0,0};
+      auto shadow_ray = ray(hit_rec.point,light_shape->random(hit_rec.point));
+      hit_record shadow_rec;
+      if (world->hit(shadow_ray, 0.001, std::numeric_limits<float>::max(), shadow_rec)) {
+        if(std::abs(shadow_rec.point.y() - 298.0f) < 1.0f)
+            {
+          L_dir = Light_color * dot(normalize(shadow_ray.direction()),hit_rec.normal) / light_shape->pdf_value(hit_rec.point,shadow_ray.direction());
+          if (std::isnan(L_dir.x()) || std::isnan(L_dir.y()) ||
+              std::isnan(L_dir.z()))
+          {
+            L_dir = vec3(0.0f,0.0f,0.0f);
+          }
+        }
+
+      }
+
+      auto scattered = ray(hit_rec.point,scatter_rec.pdf_ptr->generate());
+          return emitted + scatter_rec.attenuation * (L_dir +
+                        color(scattered,world,light_shape,depth+1,max_depth));
+    }
+    else {
+      return emitted;
+    }
+  } else {
+    return vec3(0, 0, 0);
+    //    vec3 unit_direction = unit_vector(r.direction());
+    //    float t = (unit_direction.y() + 1.0) * 0.5; // clamp (-1,1) to (0,1)
+    //    return (0.1) * ((1 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5,
+    //    0.7, 1.0));
+  }
+  // linear interperation
+  // blend white with blue
+
+}
 
 vec3 color(const ray &r, hitable *world, hitable *light_shape, int depth,
            int max_depth) {
